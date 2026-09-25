@@ -19,6 +19,9 @@ jobs:
       - name: Install dependencies
         run: pacman -Syu --noconfirm --noprogressbar base gcc git cmake pkg-config meson sdl3 sdl3_ttf
 
+      - name: Clone Lyra
+        run: git submodule update --init --recursive
+
       - name: Configure
         run: meson setup target
 

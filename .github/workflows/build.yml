@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Install dependencies
-        run: pacman -Syu --noconfirm --noprogressbar base gcc meson sdl3 sdl3_ttf
+        run: pacman -Syu --noconfirm --noprogressbar base gcc cmake pkg-config meson sdl3 sdl3_ttf
 
       - name: Configure
         run: meson setup target

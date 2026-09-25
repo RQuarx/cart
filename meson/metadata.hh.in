@@ -1,0 +1,10 @@
+#pragma once
+#include <string_view>
+
+
+namespace cart::metadata
+{
+    inline constexpr std::string_view name = "@PROJECT_NAME@";
+    inline constexpr std::string_view version = "@PROJECT_VERSION@";
+    inline constexpr std::string_view license = "@PROJECT_LICENSE@";
+}

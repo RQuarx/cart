@@ -10,23 +10,18 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
 
     steps:
       - uses: actions/checkout@v6
 
       - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libspdlog-dev         \
-            libsdl3-dev           \
-            libsdl3-ttf-dev
-
-      - name: Install Meson
-        run: python3 -m pip install --user meson ninja
+          sudo pacman -Syu meson sdl3 sdl3_ttf
 
       - name: Configure
-        run: meson setup build
+        run: meson setup target
 
       - name: Compile
-        run: meson compile -C build
+        run: meson compile -C target

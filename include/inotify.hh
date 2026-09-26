@@ -13,21 +13,32 @@
 
 namespace cart
 {
-    template <typename F>
+    class inotify_error final : public error
+    {
+    public:
+        template <typename... Args>
+        inotify_error(_impl::format_string<Args...> fmt, Args &&...args)
+            : error { "inotify: {}", std::format(fmt.fmt, std::forward<Args>(args)...) }
+        {
+        }
+    };
+
+
+    template <std::invocable<std::expected<std::reference_wrapper<const ::inotify_event>, error>> F>
     auto create_fs_watcher(const std::filesystem::path &path, F &&fn) noexcept
         -> std::expected<std::jthread, error>
     {
         int fd = ::inotify_init();
         if (fd < 0)
-            return error { "Failed to initialize inotify: {}", std::strerror(errno) }.unexpected();
+            return inotify_error { "Failed to initialize: {}", std::strerror(errno) }.unexpected();
 
         int wd = ::inotify_add_watch(fd, path.c_str(), IN_MODIFY);
         if (wd < 0)
         {
-            auto err
-                = error { "Failed to add watcher for {}: {}", path.c_str(), std::strerror(errno) };
+            auto err = inotify_error { "Failed to add watcher for {}: {}", path.c_str(),
+                                       std::strerror(errno) };
             ::close(fd);
-            return err.unexpected();
+            return std::move(err).unexpected();
         }
 
         return std::jthread {
@@ -43,23 +54,23 @@ namespace cart
                     {
                         if (errno == EINTR) continue;
 
-                        fn(error { "Failed to read inotify's fd: {}", std::strerror(errno) }
+                        fn(inotify_error { "Failed to read fd ({}): {}", fd, std::strerror(errno) }
                                .unexpected());
                         break;
                     }
 
                     if (size == 0)
                     {
-                        fn(std::nullopt);
+                        fn(inotify_error { "::read() returned EOF." }.unexpected());
                         break;
                     }
 
                     for (std::size_t offset = 0; offset < std::size_t(size);)
                     {
-                        const auto *event
-                            = reinterpret_cast<const ::inotify_event *>(buffer.data() + offset);
-                        fn(*event);
-                        offset += sizeof(::inotify_event) + event->len;
+                        const auto &event
+                            = *reinterpret_cast<const ::inotify_event *>(buffer.data() + offset);
+                        fn(std::ref(event));
+                        offset += sizeof(::inotify_event) + event.len;
                     }
                 }
 

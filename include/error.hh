@@ -38,10 +38,15 @@ namespace cart
     class error : public std::runtime_error
     {
     public:
+        template <std::derived_from<error> E, typename... Args>
+        static constexpr auto create(Args &&...args) noexcept -> std::unexpected<E>
+        { return E { std::forward<Args>(args)... }.unexpected(); }
+
+
         template <typename... Args>
         error(_impl::format_string<Args...> fmt, Args &&...args)
             : std::runtime_error { std::format(fmt.fmt, std::forward<Args>(args)...) },
-              source { fmt.source }, time { std::chrono::system_clock::now().time_since_epoch() }
+              source { fmt.source }
         {
         }
 
@@ -50,16 +55,35 @@ namespace cart
         constexpr auto where() const noexcept -> std::source_location
         { return this->source; }
 
-        [[nodiscard]]
-        constexpr auto when() const noexcept -> std::chrono::nanoseconds
-        { return this->time; }
 
+        template <typename T>
         [[nodiscard]]
-        auto unexpected() noexcept -> std::unexpected<error>
-        { return std::unexpected { *this }; }
+        auto unexpected(this T &&self) noexcept -> std::unexpected<std::remove_cvref_t<T>>
+        { return std::unexpected { std::forward<T>(self) }; }
+
+        template <typename T>
+        [[nodiscard]]
+        auto format(this const T &self) -> std::string
+        {
+            if constexpr (std::is_same_v<T, error>)
+                return std::format("[{}:{}:{}]({})", self.source.file_name(), self.source.line(),
+                                   self.source.column(), self.what());
+            else
+                return self.format();
+        }
 
     private:
-        std::source_location     source;
-        std::chrono::nanoseconds time;
+        std::source_location source;
     };
 }
+
+
+template <>
+struct std::formatter<cart::error>
+{
+    constexpr auto parse(auto &ctx) { return ctx.begin(); }
+
+    template <typename FormatContext>
+    auto format(const cart::error &err, FormatContext &ctx) const -> FormatContext::iterator
+    { return std::format_to(ctx.out(), "{}", err.format()); }
+};

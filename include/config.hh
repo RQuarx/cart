@@ -34,7 +34,10 @@ namespace cart
         std::jthread          config_watcher_thread;
 
 
-        void reload();
+        [[nodiscard]]
+        static auto get_default() noexcept -> toml::table;
+
+        void               reload();
         [[nodiscard]] auto verify() const noexcept -> std::expected<void, error>;
     };
 }

@@ -15,9 +15,22 @@ auto cart::cart::run(std::span<char *const> argv) noexcept -> int
     }
     else
     {
-        spdlog::critical("Failed to parse command line arguments: {}", res.error());
+        spdlog::critical("{}", res.error().what());
+        return 1;
+    }
+
+    cart c {};
+
+    if (auto res = config::fetch(args.config_file); res.has_value())
+        c.config = *std::move(res);
+    else
+    {
+        spdlog::critical("{}", res.error().what());
         return 1;
     }
 
     return 0;
 }
+
+
+cart::cart::cart() {}

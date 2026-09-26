@@ -18,4 +18,5 @@ metadata = configure_file(output: 'metadata.hh',
 subdir('src')
 executable(meson.project_name(), src,
            dependencies:        dependencies,
-           include_directories: include_directories('include', '.'))
+           include_directories: include_directories('include', '.'),
+           cpp_args:            [ '-DSPDLOG_USE_STD_FORMAT', '-DTOML_EXCEPTIONS=0' ])

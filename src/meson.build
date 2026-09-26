@@ -1,1 +1,1 @@
-src = files('main.cc', 'args.cc', 'cart.cc')
+src = files('main.cc', 'args.cc', 'cart.cc', 'config.cc')

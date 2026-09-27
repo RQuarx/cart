@@ -70,7 +70,9 @@ auto config::fetch(const std::filesystem::path &config_file) noexcept
     {
         if (res.has_value())
         {
-            spdlog::info("Config file modified, reloading config.");
+            std::string_view name { res->get().name, res->get().len };
+
+            spdlog::info("Config file {} has been modified, reloading config.", name);
             cfg->reload();
             return;
         }

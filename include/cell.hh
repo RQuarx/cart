@@ -4,55 +4,54 @@
 
 namespace cart
 {
-    class cell_attribute
+    struct cell
     {
-    public:
-        enum flag : std::uint8_t
+        class attibute
         {
-            bold          = 1 << 0,
-            dim           = 1 << 1,
-            italic        = 1 << 2,
-            underline     = 1 << 3,
-            blinking      = 1 << 4,
-            inverse       = 1 << 5,
-            hidden        = 1 << 6,
-            strikethrough = 1 << 7,
+        public:
+            enum flag : std::uint8_t
+            {
+                bold          = 1 << 0,
+                dim           = 1 << 1,
+                italic        = 1 << 2,
+                underline     = 1 << 3,
+                blinking      = 1 << 4,
+                inverse       = 1 << 5,
+                hidden        = 1 << 6,
+                strikethrough = 1 << 7,
+            };
+
+
+            [[nodiscard]]
+            constexpr auto has(flag f) const noexcept -> bool
+            { return (bits & f) != 0; }
+
+            constexpr void set(flag f, bool state) noexcept { state ? (bits |= f) : (bits &= ~f); }
+
+        private:
+            std::uint8_t bits = 0;
         };
 
 
-        [[nodiscard]] auto has(flag f) const noexcept -> bool;
-
-        void set(flag f, bool state) noexcept;
-        void apply_from_other(const cell_attribute &other) noexcept;
-
-    private:
-        std::uint8_t bits = 0;
-    };
+        struct color
+        {
+            cart::color bg = cart::color::make_default_bg();
+            cart::color fg = cart::color::make_default_fg();
 
 
-    class cell_color
-    {
-    public:
-        void set_background(color color) noexcept;
-        void set_foreground(color color) noexcept;
-
-        [[nodiscard]] auto get_background() const noexcept -> color;
-        [[nodiscard]] auto get_foreground() const noexcept -> color;
-        [[nodiscard]] auto inverse() const noexcept -> cell_color;
-
-        void apply_from_other(const cell_color &other) noexcept;
-
-    private:
-        color bg;
-        color fg;
-    };
+            [[nodiscard]]
+            constexpr auto inverse() const noexcept -> color
+            {
+                color c = *this;
+                std::swap(c.bg, c.fg);
+                return c;
+            }
+        };
 
 
-    struct cell
-    {
-        cell_color     color;     /* 8 bytes */
+        cell::color    color;     /* 8 bytes */
         char32_t       glyph;     /* 4 bytes */
-        cell_attribute attribute; /* 1 bytes */
+        cell::attibute attribute; /* 1 bytes */
         std::uint8_t   width;     /* 1 bytes + 2 alignment */
     };
 }

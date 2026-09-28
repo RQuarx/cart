@@ -46,7 +46,7 @@ namespace
 {
     [[nodiscard]]
     constexpr auto make_dim(std::uint32_t color) noexcept -> std::uint32_t
-    { return (color << 1) & 0x7F7F7F; }
+    { return (color >> 1) & 0x7F7F7F; }
 
 
     [[nodiscard]]

@@ -1,11 +1,11 @@
 #include <lyra/lyra.hpp>
 #include <spdlog/spdlog.h>
 
-#include "args.hh"
-#include "error.hh"
+#include "app/args.hh"
 #include "metadata.hh"
+#include "shared/error.hh"
 
-using cart::args;
+using cart::app::args;
 
 
 args::args()
@@ -19,7 +19,7 @@ args::args()
         this->working_directory = home;
     }
     else
-        throw error { "$HOME is not set, aborting." };
+        throw shared::error { "$HOME is not set, aborting." };
 
     if (char *res = std::getenv("XDG_CONFIG_HOME"); res != nullptr)
         this->config_file = std::filesystem::path { res } / metadata::name / "config.toml";
@@ -31,7 +31,7 @@ args::args()
 
 
 auto args::parse(std::span<char *const> args) noexcept
-    -> std::expected<std::optional<struct args>, error>
+    -> std::expected<std::optional<struct args>, shared::error>
 try
 {
     struct args parsed;
@@ -49,7 +49,8 @@ try
     /* clang-format on */
 
     if (auto res = cli.parse({ int(args.size()), args.begin().base() }); !res)
-        return error { "Failed to parse command-line arguments: {}", res.message() }.unexpected();
+        return shared::error { "Failed to parse command-line arguments: {}", res.message() }
+            .unexpected();
 
     auto print = [](auto &&text)
     {
@@ -64,7 +65,7 @@ try
 
     return parsed;
 }
-catch (error &e)
+catch (shared::error &e)
 {
     return e.unexpected();
 }

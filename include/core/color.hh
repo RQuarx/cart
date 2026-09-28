@@ -1,14 +1,12 @@
 #pragma once
 #include <cstdint>
+#include <string_view>
 
-#include "config.hh"
+#include "core/theme.hh"
 
 
-struct SDL_FColor;
-
-namespace cart
+namespace cart::core
 {
-    namespace sdl { using fcolor = ::SDL_FColor; }
 
 
     class color
@@ -24,9 +22,9 @@ namespace cart
 
         enum class intensity : std::uint8_t
         {
-            bright,
-            normal,
-            dim
+            bright = 0,
+            normal = 1,
+            dim    = 2
         };
 
 
@@ -65,8 +63,7 @@ namespace cart
         { return this->data & payload_mask; }
 
         [[nodiscard]]
-        auto get_fcolor(const config &conf, intensity intensity) const noexcept
-            -> std::expected<sdl::fcolor, error>;
+        auto resolve(const theme &theme, intensity intensity) const noexcept -> std::uint32_t;
 
 
     private:
@@ -74,17 +71,6 @@ namespace cart
 
 
         constexpr color(std::uint32_t data) noexcept : data { data } {}
-
-
-        [[nodiscard]]
-        static auto
-        handle_default_color(const config &conf, std::string_view key, intensity intensity) noexcept
-            -> std::expected<sdl::fcolor, error>;
-
-        [[nodiscard]]
-        static auto
-        handle_named_palette(const config &conf, std::uint8_t index, intensity intensity) noexcept
-            -> std::expected<sdl::fcolor, error>;
 
 
         static constexpr std::uint32_t mode_shift   = 30;

@@ -1,10 +1,10 @@
 #pragma once
 #include <span>
 
-#include "config.hh"
+#include "app/config.hh"
 
 
-namespace cart
+namespace cart::app
 {
     class cart
     {
@@ -12,7 +12,7 @@ namespace cart
         [[nodiscard]] static auto run(std::span<char *const> argv) noexcept -> int;
 
     private:
-        std::shared_ptr<config> config;
+        std::shared_ptr<app::config> config;
 
 
         cart();

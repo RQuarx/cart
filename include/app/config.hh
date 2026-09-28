@@ -6,17 +6,18 @@
 
 #include <toml++/toml.hpp>
 
-#include "error.hh"
+#include "core/theme.hh"
+#include "shared/error.hh"
 
 
-namespace cart
+namespace cart::app
 {
     class config
     {
     public:
         [[nodiscard]]
         static auto fetch(const std::filesystem::path &config_file) noexcept
-            -> std::expected<std::shared_ptr<config>, error>;
+            -> std::expected<std::shared_ptr<config>, shared::error>;
 
 
         [[nodiscard]] auto get(std::string_view key) const noexcept -> const toml::node *;
@@ -25,6 +26,9 @@ namespace cart
         template <typename T>
         auto get_as(std::string_view key) const noexcept -> const toml::impl::wrap_node<T> *
         { return this->data.get_as<T>(key); }
+
+
+        [[nodiscard]] auto get_theme() const noexcept -> std::expected<core::theme, shared::error>;
 
 
     private:
@@ -38,6 +42,6 @@ namespace cart
         static auto get_default() noexcept -> toml::table;
 
         void               reload();
-        [[nodiscard]] auto verify() const noexcept -> std::expected<void, error>;
+        [[nodiscard]] auto verify() const noexcept -> std::expected<void, shared::error>;
     };
 }

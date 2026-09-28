@@ -1,13 +1,19 @@
 [colors]
 bold_as_bright = true
 
-# Bright -> dim -> normal
-foreground = [ 0xFFFFFF, 0xFFFFFF, 0xE3C7A1 ]
-background = [ 0x404040, 0x000000, 0x000000 ]
+foreground.bright = 0xFFFFFF
+foreground.normal = 0xFFFFFF
+foreground.dim = 0xE3C7A1
+
+# foreground = 0xFFFFFF
+
+background.bright = 0x404040
+background.normal = 0x000000
+background.dim = 0x000000
 
 [colors.palette]
-normal = [ 0x000000, 0xCD0000, 0x00CD00, 0xCDCD00, 0x0000CD, 0xCD00CD, 0x00CDCD, 0xFAEBD7 ]
 bright = [ 0x404040, 0xFF0000, 0x00FF00, 0xFFFF00, 0x0000FF, 0xFF00FF, 0x00FFFF, 0xFFFFFF ]
+normal = [ 0x000000, 0xCD0000, 0x00CD00, 0xCDCD00, 0x0000CD, 0xCD00CD, 0x00CDCD, 0xFAEBD7 ]
 
 # If dim is not defined,
 # the terminal will attempt to use a "darkened" version of the `normal` colours.

@@ -8,25 +8,26 @@
 #include <sys/inotify.h>
 #include <unistd.h>
 
-#include "error.hh"
+#include "shared/error.hh"
 
 
-namespace cart
+namespace cart::app
 {
-    class inotify_error final : public error
+    class inotify_error final : public shared::error
     {
     public:
         template <typename... Args>
-        inotify_error(_impl::format_string<Args...> fmt, Args &&...args)
-            : error { "inotify: {}", std::format(fmt.fmt, std::forward<Args>(args)...) }
+        inotify_error(shared::_impl::format_string<Args...> fmt, Args &&...args)
+            : shared::error { "inotify: {}", std::format(fmt.fmt, std::forward<Args>(args)...) }
         {
         }
     };
 
 
-    template <std::invocable<std::expected<std::reference_wrapper<const ::inotify_event>, error>> F>
+    template <std::invocable<
+        std::expected<std::reference_wrapper<const ::inotify_event>, shared::error>> F>
     auto create_fs_watcher(const std::filesystem::path &path, F &&fn) noexcept
-        -> std::expected<std::jthread, error>
+        -> std::expected<std::jthread, shared::error>
     {
         int fd = ::inotify_init();
         if (fd < 0)

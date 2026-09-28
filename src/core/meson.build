@@ -1,0 +1,1 @@
+core_src = files('color.cc')

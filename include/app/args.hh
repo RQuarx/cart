@@ -2,10 +2,10 @@
 #include <expected>
 #include <filesystem>
 
-#include "error.hh"
+#include "shared/error.hh"
 
 
-namespace cart
+namespace cart::app
 {
     struct args
     {
@@ -19,6 +19,6 @@ namespace cart
 
         [[nodiscard]]
         static auto parse(std::span<char *const> args) noexcept
-            -> std::expected<std::optional<struct args>, error>;
+            -> std::expected<std::optional<app::args>, shared::error>;
     };
 }

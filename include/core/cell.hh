@@ -1,8 +1,8 @@
 #pragma once
-#include "color.hh"
+#include "core/color.hh"
 
 
-namespace cart
+namespace cart::core
 {
     struct cell
     {
@@ -35,8 +35,8 @@ namespace cart
 
         struct color
         {
-            cart::color bg = cart::color::make_default_bg();
-            cart::color fg = cart::color::make_default_fg();
+            core::color bg = core::color::make_default_bg();
+            core::color fg = core::color::make_default_fg();
 
 
             [[nodiscard]]

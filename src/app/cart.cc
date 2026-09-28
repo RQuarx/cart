@@ -1,10 +1,10 @@
 #include <spdlog/spdlog.h>
 
-#include "args.hh"
-#include "cart.hh"
+#include "app/args.hh"
+#include "app/cart.hh"
 
 
-auto cart::cart::run(std::span<char *const> argv) noexcept -> int
+auto cart::app::cart::run(std::span<char *const> argv) noexcept -> int
 {
     struct args args;
 
@@ -15,7 +15,7 @@ auto cart::cart::run(std::span<char *const> argv) noexcept -> int
     }
     else
     {
-        spdlog::critical("{}", res.error().what());
+        spdlog::critical("{}", res.error().format());
         return 1;
     }
 
@@ -25,7 +25,7 @@ auto cart::cart::run(std::span<char *const> argv) noexcept -> int
         c.config = *std::move(res);
     else
     {
-        spdlog::critical("{}", res.error().what());
+        spdlog::critical("{}", res.error().format());
         return 1;
     }
 
@@ -33,4 +33,4 @@ auto cart::cart::run(std::span<char *const> argv) noexcept -> int
 }
 
 
-cart::cart::cart() {}
+cart::app::cart::cart() {}

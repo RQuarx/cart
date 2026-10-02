@@ -19,12 +19,16 @@ Diagnostics:
             - readability-braces-around-statements
             - readability-identifier-length
             - readability-magic-numbers
+            - readability-inconsistent-ifelse-braces
             - bugprone-easily-swappable-parameters
             - readability-avoid-nested-conditional-operator
             - bugprone-narrowing-conversions
             - modernize-use-trailing-return-type
             - modernize-use-designated-initializers
             - modernize-avoid-c-arrays
+            - modernize-avoid-c-style-cast
+            - readability-trailing-comma
+            - modernize-use-integer-sign-comparison
 
 Index:
     Background: Build

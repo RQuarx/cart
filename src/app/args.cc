@@ -3,7 +3,6 @@
 
 #include "app/args.hh"
 #include "metadata.hh"
-#include "shared/error.hh"
 
 using cart::app::args;
 
@@ -30,8 +29,7 @@ args::args()
 }
 
 
-auto args::parse(std::span<char *const> args) noexcept
-    -> std::expected<std::optional<struct args>, shared::error>
+auto args::parse(std::span<char *const> args) noexcept -> result<std::optional<struct args>>
 try
 {
     struct args parsed;

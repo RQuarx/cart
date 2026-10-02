@@ -1,6 +1,5 @@
 #pragma once
 #include <cstring>
-#include <expected>
 #include <filesystem>
 #include <thread>
 
@@ -8,7 +7,7 @@
 #include <sys/inotify.h>
 #include <unistd.h>
 
-#include "shared/error.hh"
+#include "shared/result.hh"
 
 
 namespace cart::app
@@ -24,10 +23,9 @@ namespace cart::app
     };
 
 
-    template <std::invocable<
-        std::expected<std::reference_wrapper<const ::inotify_event>, shared::error>> F>
+    template <std::invocable<result<std::reference_wrapper<const ::inotify_event>>> F>
     auto create_fs_watcher(const std::filesystem::path &path, F &&fn) noexcept
-        -> std::expected<std::jthread, shared::error>
+        -> result<std::jthread>
     {
         int fd = ::inotify_init();
         if (fd < 0)
@@ -66,7 +64,7 @@ namespace cart::app
                         break;
                     }
 
-                    for (std::size_t offset = 0; offset < std::size_t(size);)
+                    for (auto offset = 0UZ; offset < std::size_t(size);)
                     {
                         const auto &event
                             = *reinterpret_cast<const ::inotify_event *>(buffer.data() + offset);

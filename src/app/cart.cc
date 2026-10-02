@@ -22,7 +22,7 @@ auto cart::app::cart::run(std::span<char *const> argv) noexcept -> int
     cart c {};
 
     if (auto res = config::fetch(args.config_file); res.has_value())
-        c.config = *std::move(res);
+        c.m_config = *std::move(res);
     else
     {
         spdlog::critical("{}", res.error().format());

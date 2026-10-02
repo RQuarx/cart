@@ -12,7 +12,7 @@ namespace cart::app
         [[nodiscard]] static auto run(std::span<char *const> argv) noexcept -> int;
 
     private:
-        std::shared_ptr<app::config> config;
+        std::shared_ptr<app::config> m_config;
 
 
         cart();

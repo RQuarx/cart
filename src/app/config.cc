@@ -35,8 +35,12 @@ public:
     config_error(const toml::source_region                  &region,
                  cart::shared::_impl::format_string<Args...> fmt,
                  Args &&...args)
-        : cart::shared::error { "Error [{}:{}]: {}", *region.path, region.begin,
-                                std::format(fmt.fmt, std::forward<Args>(args)...) }
+        : cart::shared::error {
+              "Error [{}:{}]: {}",
+              *region.path,
+              region.begin,
+              std::format(fmt.fmt, std::forward<Args>(args)...),
+          }
     {
     }
 };
@@ -51,7 +55,7 @@ namespace
 
     [[nodiscard]]
     auto read_color(const toml::node &node, std::string_view key) noexcept
-        -> std::expected<std::uint32_t, cart::shared::error>
+        -> cart::result<std::uint32_t>
     {
         const auto v = node.value<std::int64_t>();
 
@@ -72,8 +76,7 @@ namespace
 
     /** The config value for the color.background/foreground can either be a table, or an int. */
     [[nodiscard]]
-    auto read_triple(const toml::node &node, std::string_view key) noexcept
-        -> std::expected<triple, cart::shared::error>
+    auto read_triple(const toml::node &node, std::string_view key) noexcept -> cart::result<triple>
     {
         if (node.is_integer())
         {
@@ -118,8 +121,7 @@ namespace
 
 
     [[nodiscard]]
-    auto read_octal(const toml::node &node, std::string_view key) noexcept
-        -> std::expected<octal, cart::shared::error>
+    auto read_octal(const toml::node &node, std::string_view key) noexcept -> cart::result<octal>
     {
         const auto *array = node.as_array();
 
@@ -143,7 +145,7 @@ namespace
 
 
 auto config::fetch(const std::filesystem::path &config_file) noexcept
-    -> std::expected<std::shared_ptr<config>, error>
+    -> result<std::shared_ptr<config>>
 {
     std::shared_ptr<config> cfg;
 
@@ -157,7 +159,7 @@ auto config::fetch(const std::filesystem::path &config_file) noexcept
     }
 
     if (auto res = toml::parse_file(config_file.string()); res.succeeded())
-        cfg->data = std::move(res).table();
+        cfg->m_data = std::move(res).table();
     else
     {
         if (!std::filesystem::exists(config_file))
@@ -165,9 +167,9 @@ auto config::fetch(const std::filesystem::path &config_file) noexcept
             spdlog::warn("Specified config file ({}) does not exist, using default configuration.",
                          config_file.c_str());
 
-            cfg->config_watcher_thread = {};
-            cfg->config_file           = "";
-            cfg->data                  = config::get_default();
+            cfg->m_config_watcher_thread = {};
+            cfg->m_config_file           = "";
+            cfg->m_data                  = config::get_default();
 
             return cfg;
         }
@@ -175,16 +177,16 @@ auto config::fetch(const std::filesystem::path &config_file) noexcept
         return config_error { res.error() }.unexpected();
     }
 
-    cfg->config_file = config_file;
+    cfg->m_config_file = config_file;
 
-    auto fn = [cfg](std::expected<std::reference_wrapper<const ::inotify_event>, error> res)
+    auto fn = [cfg](result<std::reference_wrapper<const ::inotify_event>> res)
     {
         if (res.has_value())
         {
             std::string_view name { res->get().name, res->get().len };
 
             spdlog::info("Config file {} has been modified, reloading config.", name);
-            cfg->reload();
+            cfg->mf_reload();
             return;
         }
 
@@ -192,7 +194,7 @@ auto config::fetch(const std::filesystem::path &config_file) noexcept
     };
 
     if (auto res = create_fs_watcher(config_file, fn); res.has_value())
-        cfg->config_watcher_thread = std::move(*res);
+        cfg->m_config_watcher_thread = std::move(*res);
     else
         return res.error().unexpected();
 
@@ -200,11 +202,11 @@ auto config::fetch(const std::filesystem::path &config_file) noexcept
 }
 
 
-auto config::get_theme() const noexcept -> std::expected<core::theme, error>
+auto config::get_theme() const noexcept -> result<core::theme>
 {
     core::theme theme;
 
-    const auto *colors = this->get("colors");
+    const auto *colors = get("colors");
     if (colors == nullptr) return theme;
 
     if (!colors->is_table())
@@ -250,25 +252,63 @@ auto config::get_theme() const noexcept -> std::expected<core::theme, error>
 }
 
 
-void config::reload()
+void config::mf_reload()
 {
-    std::scoped_lock lock { this->mtx };
+    std::scoped_lock lock { m_mtx };
 
-    if (auto res = toml::parse_file(config_file.string()); res.succeeded())
-        this->data = std::move(res).table();
+    if (auto res = toml::parse_file(m_config_file.string()); res.succeeded())
+        m_data = std::move(res).table();
     else
         spdlog::error("{}", config_error { res.error() }.what());
 }
 
 
 auto config::get(std::string_view key) const noexcept -> const toml::node *
-{ return this->data.get(key); }
+{ return m_data.get(key); }
 
 
 auto config::get_default() noexcept -> toml::table
 {
-    toml::table config;
-
-
-    return config;
+    return toml::table {
+        { "color",
+         toml::table {
+              { "bold_as_bright", true },
+              {
+                  "foreground",
+                  toml::table {
+                      { "bright", 0xFFFFFF },
+                      { "normal", 0xFFFFFF },
+                      { "dim", 0xE3C7A1 },
+                  },
+              },
+              {
+                  "background",
+                  toml::table {
+                      { "bright", 0x404040 },
+                      { "normal", 0x000000 },
+                      { "dim", 0x000000 },
+                  },
+              },
+              {
+                  "palette",
+                  toml::table {
+                      {
+                          "bright",
+                          toml::array { 0x404040, 0xFF0000, 0x00FF00, 0xFFFF00, 0x0000FF, 0xFF00FF,
+                                        0x00FFFF, 0xFFFFFF },
+                      },
+                      {
+                          "normal",
+                          toml::array { 0x000000, 0xCD0000, 0x00CD00, 0xCDCD00, 0x0000CD, 0xCD00CD,
+                                        0x00CDCD, 0xFAEBD7 },
+                      },
+                      {
+                          "dim",
+                          toml::array { 0x000000, 0x872B22, 0x549E4E, 0xAAAB34, 0x0F2353, 0x972596,
+                                        0x31A7A6, 0xE3C7A1 },
+                      },
+                  },
+              },
+          } }
+    };
 }

@@ -77,6 +77,12 @@ namespace cart::shared
     };
 }
 
+namespace cart
+{
+    template <typename T, std::derived_from<shared::error> E = shared::error>
+    using result = std::expected<T, E>;
+}
+
 
 template <>
 struct std::formatter<cart::shared::error>

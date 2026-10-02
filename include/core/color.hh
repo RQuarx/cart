@@ -6,8 +6,6 @@
 
 namespace cart::core
 {
-
-
     class color
     {
     public:
@@ -51,25 +49,25 @@ namespace cart::core
 
         [[nodiscard]]
         constexpr auto get_mode() const noexcept -> mode
-        { return mode(this->data >> mode_shift); }
+        { return mode(m_data >> mode_shift); }
 
         [[nodiscard]]
         constexpr auto get_palette_index() const noexcept -> std::uint8_t
-        { return std::uint8_t(this->data & payload_mask); }
+        { return std::uint8_t(m_data & payload_mask); }
 
         [[nodiscard]]
         constexpr auto get_rgb() const noexcept -> std::uint32_t
-        { return this->data & payload_mask; }
+        { return m_data & payload_mask; }
 
         [[nodiscard]]
         auto resolve(const theme &theme, intensity intensity) const noexcept -> std::uint32_t;
 
 
     private:
-        std::uint32_t data;
+        std::uint32_t m_data;
 
 
-        constexpr color(std::uint32_t data) noexcept : data { data } {}
+        constexpr color(std::uint32_t data) noexcept : m_data { data } {}
 
 
         static constexpr std::uint32_t mode_shift   = 30;

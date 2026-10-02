@@ -1,8 +1,7 @@
 #pragma once
-#include <expected>
 #include <filesystem>
 
-#include "shared/error.hh"
+#include "shared/result.hh"
 
 
 namespace cart::app
@@ -18,7 +17,6 @@ namespace cart::app
 
 
         [[nodiscard]]
-        static auto parse(std::span<char *const> args) noexcept
-            -> std::expected<std::optional<app::args>, shared::error>;
+        static auto parse(std::span<char *const> args) noexcept -> result<std::optional<app::args>>;
     };
 }

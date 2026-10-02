@@ -1,5 +1,4 @@
 #pragma once
-#include <expected>
 #include <filesystem>
 #include <mutex>
 #include <thread>
@@ -7,7 +6,7 @@
 #include <toml++/toml.hpp>
 
 #include "core/theme.hh"
-#include "shared/error.hh"
+#include "shared/result.hh"
 
 
 namespace cart::app
@@ -17,7 +16,7 @@ namespace cart::app
     public:
         [[nodiscard]]
         static auto fetch(const std::filesystem::path &config_file) noexcept
-            -> std::expected<std::shared_ptr<config>, shared::error>;
+            -> result<std::shared_ptr<config>>;
 
 
         [[nodiscard]] auto get(std::string_view key) const noexcept -> const toml::node *;
@@ -25,23 +24,23 @@ namespace cart::app
 
         template <typename T>
         auto get_as(std::string_view key) const noexcept -> const toml::impl::wrap_node<T> *
-        { return this->data.get_as<T>(key); }
+        { return m_data.get_as<T>(key); }
 
 
-        [[nodiscard]] auto get_theme() const noexcept -> std::expected<core::theme, shared::error>;
+        [[nodiscard]] auto get_theme() const noexcept -> result<core::theme>;
 
 
     private:
-        std::mutex            mtx;
-        std::filesystem::path config_file;
-        toml::table           data;
-        std::jthread          config_watcher_thread;
+        std::mutex            m_mtx;
+        std::filesystem::path m_config_file;
+        toml::table           m_data;
+        std::jthread          m_config_watcher_thread;
 
 
         [[nodiscard]]
         static auto get_default() noexcept -> toml::table;
 
-        void               reload();
-        [[nodiscard]] auto verify() const noexcept -> std::expected<void, shared::error>;
+        void               mf_reload();
+        [[nodiscard]] auto mf_verify() const noexcept -> result<void>;
     };
 }

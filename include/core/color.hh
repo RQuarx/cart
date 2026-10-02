@@ -26,11 +26,11 @@ namespace cart::core
 
 
         [[nodiscard]]
-        static constexpr auto make_default_fg() noexcept -> color
+        static constexpr auto make_default_bg() noexcept -> color
         { return { pack(mode::default_background, 0) }; }
 
         [[nodiscard]]
-        static constexpr auto make_default_bg() noexcept -> color
+        static constexpr auto make_default_fg() noexcept -> color
         { return { pack(mode::default_foreground, 0) }; }
 
         [[nodiscard]]
@@ -75,6 +75,6 @@ namespace cart::core
 
         static constexpr auto pack(color::mode mode, std::uint32_t payload) noexcept
             -> std::uint32_t
-        { return (std::uint32_t(mode) << mode_shift) | (payload | payload_mask); }
+        { return (std::uint32_t(mode) << mode_shift) | (payload & payload_mask); }
     };
 }

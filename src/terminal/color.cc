@@ -2,9 +2,9 @@
 
 #include <SDL3/SDL_pixels.h>
 
-#include "core/color.hh"
+#include "terminal/color.hh"
 
-using cart::core::color;
+using cart::term::color;
 
 
 namespace

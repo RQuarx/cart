@@ -1,6 +1,6 @@
-#include "core/grid.hh"
+#include "terminal/grid.hh"
 
-using cart::core::grid;
+using cart::term::grid;
 
 
 auto grid::create(std::size_t rows, std::size_t columns) noexcept -> result<grid>

@@ -2,11 +2,11 @@
 #include <cstddef>
 #include <deque>
 
-#include "core/row.hh"
+#include "terminal/row.hh"
 #include "shared/result.hh"
 
 
-namespace cart::core
+namespace cart::term
 {
     class grid
     {

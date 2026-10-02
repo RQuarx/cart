@@ -1,0 +1,1 @@
+terminal_src = files('color.cc', 'grid.cc')

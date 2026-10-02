@@ -1,10 +1,10 @@
 #pragma once
 #include <cstdint>
 
-#include "core/theme.hh"
+#include "terminal/theme.hh"
 
 
-namespace cart::core
+namespace cart::term
 {
     class color
     {

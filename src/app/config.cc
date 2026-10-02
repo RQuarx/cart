@@ -202,9 +202,9 @@ auto config::fetch(const std::filesystem::path &config_file) noexcept
 }
 
 
-auto config::get_theme() const noexcept -> result<core::theme>
+auto config::get_theme() const noexcept -> result<term::theme>
 {
-    core::theme theme;
+    term::theme theme;
 
     const auto *colors = get("colors");
     if (colors == nullptr) return theme;

@@ -1,8 +1,8 @@
 #pragma once
-#include "core/color.hh"
+#include "terminal/color.hh"
 
 
-namespace cart::core
+namespace cart::term
 {
     struct cell
     {
@@ -140,8 +140,8 @@ namespace cart::core
 
         struct color
         {
-            core::color bg = core::color::make_default_bg();
-            core::color fg = core::color::make_default_fg();
+            term::color bg = term::color::make_default_bg();
+            term::color fg = term::color::make_default_fg();
 
 
             [[nodiscard]]
@@ -157,5 +157,5 @@ namespace cart::core
     };
 
 
-    static_assert(sizeof(cell) == 16, "Too big of a size of cart::core:cell.");
+    static_assert(sizeof(cell) == 16, "Too big of a size of cart::term:cell.");
 }

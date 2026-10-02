@@ -5,7 +5,7 @@
 
 #include <toml++/toml.hpp>
 
-#include "core/theme.hh"
+#include "terminal/theme.hh"
 #include "shared/result.hh"
 
 
@@ -27,7 +27,7 @@ namespace cart::app
         { return m_data.get_as<T>(key); }
 
 
-        [[nodiscard]] auto get_theme() const noexcept -> result<core::theme>;
+        [[nodiscard]] auto get_theme() const noexcept -> result<term::theme>;
 
 
     private:

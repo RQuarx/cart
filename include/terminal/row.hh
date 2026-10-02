@@ -1,10 +1,10 @@
 #pragma once
 #include <vector>
 
-#include "core/cell.hh"
+#include "terminal/cell.hh"
 
 
-namespace cart::core
+namespace cart::term
 {
     struct row
     {

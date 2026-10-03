@@ -17,6 +17,17 @@ namespace cart::term
         position begin;
         position end;
     };
+
+
+    enum class underline_style : std::uint8_t
+    {
+        none,
+        single,
+        doubles,
+        curly,
+        dotted,
+        dashed
+    };
 }
 
 

@@ -1,4 +1,5 @@
 #pragma once
+#include "shared/traits.hh"
 #include "terminal/color.hh"
 
 
@@ -6,7 +7,7 @@ namespace cart::term
 {
     struct cell
     {
-        class attribute
+        class attribute final : public trait::attribute<std::uint16_t>
         {
         public:
             enum flag : std::uint16_t
@@ -25,17 +26,6 @@ namespace cart::term
                 confined = 1 << 10,
                 url      = 1 << 11,
             };
-
-
-            [[nodiscard]]
-            constexpr auto has(flag f) const noexcept -> bool
-            { return (m_bits & f) != 0; }
-
-            constexpr void set(flag f, bool state) noexcept
-            { state ? m_bits |= f : m_bits &= std::uint16_t(~f); }
-
-        private:
-            std::uint16_t m_bits = 0;
         } attribute;
 
 
@@ -76,29 +66,29 @@ namespace cart::term
             { return { character::composed_lo + (index & character::max_composed_index) }; }
 
             [[nodiscard]]
-            static constexpr auto make_spacer() noexcept -> character
-            { return { character::spacer_value }; }
+            static constexpr auto make_spacer(std::uint32_t remaining = 0) noexcept -> character
+            { return { character::spacer_base + remaining }; }
 
 
             [[nodiscard]]
             constexpr auto get_kind() const noexcept -> kind
             {
-                if (m_value <= character::max_codepoint) return kind::codepoint;
-                if (m_value == character::spacer_value) return kind::spacer;
+                if (m_value <= max_codepoint) return kind::codepoint;
+                if (m_value >= spacer_base) return kind::spacer;
                 return kind::composed;
             }
 
             [[nodiscard]]
             constexpr auto is_codepoint() const noexcept -> bool
-            { return m_value <= character::max_codepoint; }
+            { return get_kind() == kind::codepoint; }
 
             [[nodiscard]]
             constexpr auto is_composed() const noexcept -> bool
-            { return m_value >= character::composed_lo and m_value <= character::composed_hi; }
+            { return get_kind() == kind::composed; }
 
             [[nodiscard]]
             constexpr auto is_spacer() const noexcept -> bool
-            { return m_value == character::spacer_value; }
+            { return get_kind() == kind::spacer; }
 
             [[nodiscard]]
             constexpr auto is_empty() const noexcept -> bool
@@ -114,6 +104,11 @@ namespace cart::term
             [[nodiscard]]
             constexpr auto get_composed_index() const noexcept -> std::uint32_t
             { return m_value - character::composed_lo; }
+
+            /* Valid only if is_spacer() == true */
+            [[nodiscard]]
+            constexpr auto get_spacer_remaining() const noexcept -> std::uint32_t
+            { return m_value - spacer_base; }
 
 
             [[nodiscard]]
@@ -134,7 +129,7 @@ namespace cart::term
             static constexpr std::uint32_t max_composed_index = 0x3FFFFFFF;
             static constexpr std::uint32_t composed_hi        = composed_lo + max_composed_index;
 
-            static constexpr std::uint32_t spacer_value = composed_hi + 1;
+            static constexpr std::uint32_t spacer_base = composed_hi + 1;
         } character;
 
 

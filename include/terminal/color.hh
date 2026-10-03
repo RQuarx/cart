@@ -63,6 +63,10 @@ namespace cart::term
         auto resolve(const theme &theme, intensity intensity) const noexcept -> std::uint32_t;
 
 
+        [[nodiscard]]
+        friend constexpr auto operator==(color, color) noexcept -> bool = default;
+
+
     private:
         std::uint32_t m_data;
 

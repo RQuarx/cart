@@ -1,1 +1,1 @@
-app_src = files('args.cc', 'cart.cc', 'config.cc')
+app_src = files('args.cc', 'cart.cc', 'config.cc', 'window.cc')

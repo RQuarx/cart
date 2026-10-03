@@ -1,1 +1,1 @@
-terminal_src = files('color.cc', 'grid.cc')
+terminal_src = files('color.cc', 'grid.cc', 'row.cc')

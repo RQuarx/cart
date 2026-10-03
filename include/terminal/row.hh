@@ -29,7 +29,7 @@ namespace cart::term
 
         struct underline_range : range
         {
-            color           color;
+            color           fg;
             underline_style style;
         };
 

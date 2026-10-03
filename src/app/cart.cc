@@ -2,6 +2,8 @@
 
 #include "app/args.hh"
 #include "app/cart.hh"
+#include "app/window.hh"
+#include "metadata.hh"
 
 
 auto cart::app::cart::run(std::span<char *const> argv) noexcept -> int
@@ -24,6 +26,19 @@ auto cart::app::cart::run(std::span<char *const> argv) noexcept -> int
     if (auto res = config::fetch(args.config_file); res.has_value())
         c.m_config = *std::move(res);
     else
+    {
+        spdlog::critical("{}", res.error().format());
+        return 1;
+    }
+
+    auto win = window::create(metadata::name);
+    if (!win.has_value())
+    {
+        spdlog::critical("{}", win.error().format());
+        return 1;
+    }
+
+    if (auto res = win->run(); !res.has_value())
     {
         spdlog::critical("{}", res.error().format());
         return 1;

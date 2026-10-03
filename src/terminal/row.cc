@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "terminal/row.hh"
 
 using cart::term::row;
@@ -205,7 +207,7 @@ void row::put_underline(range range, color color, underline_style style)
 
     put_in(extras->underlines, underline_range { range, color, style },
            [](const underline_range &a, const underline_range &b)
-           { return a.style == b.style and a.color == b.color; });
+           { return a.style == b.style and a.fg == b.fg; });
 }
 
 

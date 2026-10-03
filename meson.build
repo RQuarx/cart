@@ -21,6 +21,7 @@ configure_file(output: 'metadata.hh',
                                 'PROJECT_VERSION': meson.project_version(),
                                 'PROJECT_LICENSE': meson.project_license()[0] })
 subdir('src')
+subdir('tests')
 executable(meson.project_name(), src,
            dependencies:        dependencies,
            include_directories: include_directories('include', '.'),

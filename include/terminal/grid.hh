@@ -17,8 +17,8 @@ namespace cart::term
 
     struct resize_delta
     {
-        std::size_t pushed; /* scrollback lines pulled onto the screen (content moved down) */
-        std::size_t pulled; /* screen lines pushed into scrollback (content moved up) */
+        std::size_t pushed;
+        std::size_t pulled;
     };
 
 
@@ -54,6 +54,10 @@ namespace cart::term
         constexpr auto scrollback_limit() const noexcept -> std::size_t
         { return m_scrollback_limit; }
 
+        [[nodiscard]]
+        constexpr auto scrollback_at(this auto &self, std::size_t i) noexcept -> auto &
+        { return self.m_lines[i]; }
+
 
         /** @brief Scrolling content up/down inside a region (full screen by default) */
         auto scroll_up(scroll_region region, std::size_t n = 1) noexcept -> result<void>;
@@ -64,8 +68,6 @@ namespace cart::term
         { return scroll_down({ 0, m_screen_rows }, n); }
 
         auto resize(std::size_t new_rows, std::size_t new_columns) noexcept -> result<resize_delta>;
-
-#pragma region viewport
 
         [[nodiscard]]
         constexpr auto view_offset() const noexcept -> std::size_t
@@ -78,7 +80,6 @@ namespace cart::term
         void scroll_view_down(std::size_t n) noexcept;
         void reset_view() noexcept { m_view_offset = 0; }
 
-#pragma endregion
 
         /**
          * @brief Ids stay valid while the line exists, even as the deque shifts.

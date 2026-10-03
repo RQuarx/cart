@@ -105,9 +105,9 @@ namespace
             if (k == "dim") index = 2;
 
             if (index == -1)
-                return error { R"(Unrecognized key ("{}") for "{}")", k, key }.unexpected();
+                return error { R"(Unrecognized key ("{}") for "{}")", k.str(), key }.unexpected();
 
-            if (auto res = read_color(value, k); res.has_value())
+            if (auto res = read_color(value, k.str()); res.has_value())
                 t[index] = *res;
             else
                 return res.error().unexpected();

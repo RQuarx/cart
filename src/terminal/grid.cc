@@ -1,3 +1,6 @@
+#include <algorithm>
+#include <vector>
+
 #include "terminal/grid.hh"
 
 using cart::term::grid;
@@ -104,36 +107,147 @@ auto grid::scroll_down(scroll_region r, std::size_t n) noexcept -> result<void>
 }
 
 
+namespace
+{
+    [[nodiscard]]
+    constexpr auto is_empty_cell(const cart::term::cell &c) noexcept -> bool
+    { return c.character.is_empty(); }
+}
+
 auto grid::resize(std::size_t new_rows, std::size_t new_columns) noexcept -> result<resize_delta>
 {
     if (new_rows == 0 or new_columns == 0)
         return shared::error { "Invalid new size, 0 is not allowed." }.unexpected();
 
-    resize_delta delta {};
+    if (new_rows == m_screen_rows and new_columns == m_columns) return resize_delta {};
 
-    if (new_columns != m_columns)
+    if (new_columns == m_columns)
     {
-        for (auto &line : m_lines) /* no reflow yet: truncate / pad */
-            line.resize(new_columns);
-        m_columns = new_columns;
+        resize_delta delta {};
+
+        const auto grow = new_rows > m_screen_rows ? new_rows - m_screen_rows : 0UZ;
+        if (grow > 0)
+        {
+            delta.pulled = std::min(grow, scrollback_size());
+            for (auto i = delta.pulled; i < grow; ++i)
+                m_lines.emplace_back(m_columns);
+        }
+        else
+            delta.pushed = m_screen_rows - new_rows;
+
+        m_screen_rows = new_rows;
+        trim_scrollback();
+
+        for (std::size_t i = 0; i < m_screen_rows; ++i) row_at(i).damage();
+
+        return delta;
     }
 
-    if (new_rows > m_screen_rows)
-    {
-        const auto grow = new_rows - m_screen_rows;
-        delta.pulled
-            = std::min(grow, scrollback_size()); /* computed before m_screen_rows changes */
+    const auto old_scrollback = scrollback_size();
 
-        for (auto i = delta.pulled; i < grow; ++i)
-            m_lines.emplace_back(m_columns); /* not enough history: blank rows at the bottom */
+    std::vector<std::vector<cell>> logical;
+    std::vector<cell>              current;
+    for (const auto &line : m_lines)
+    {
+        if (line.attribute.has(row::attribute::wrapped))
+            current.insert(current.end(), line.cells.begin(), line.cells.end());
+        else
+        {
+            std::size_t last = line.cells.size();
+            while (last > 0 and is_empty_cell(line.cells[last - 1])) last--;
+            current.insert(current.end(), line.cells.begin(), line.cells.begin() + last);
+            logical.emplace_back(std::move(current));
+            current.clear();
+        }
     }
-    else
-        delta.pushed = m_screen_rows - new_rows;
+    if (!current.empty()) logical.emplace_back(std::move(current));
+
+    std::deque<row> reflowed;
+    for (const auto &line : logical)
+    {
+        if (line.empty())
+        {
+            reflowed.emplace_back(new_columns);
+            continue;
+        }
+
+        row         out { new_columns };
+        std::size_t pos = 0;
+        std::size_t i   = 0;
+        while (i < line.size())
+        {
+            if (line[i].character.is_spacer())
+            {
+                i++;
+                continue;
+            }
+
+            const bool        is_wide = (i + 1 < line.size() and line[i + 1].character.is_spacer());
+            const std::size_t w       = is_wide ? 2UZ : 1UZ;
+
+            if (new_columns == 1 and is_wide)
+            {
+                if (pos >= 1)
+                {
+                    out.attribute.set(row::attribute::wrapped, true);
+                    reflowed.emplace_back(std::move(out));
+                    out = row { new_columns };
+                    pos = 0;
+                }
+                out.cells[pos] = line[i];
+                pos += 1;
+                i += 2;
+                continue;
+            }
+
+            if (pos + w > new_columns)
+            {
+                out.attribute.set(row::attribute::wrapped, true);
+                reflowed.emplace_back(std::move(out));
+                out = row { new_columns };
+                pos = 0;
+                continue;
+            }
+
+            out.cells[pos] = line[i];
+            if (is_wide)
+            {
+                out.cells[pos + 1] = line[i + 1];
+                pos += 2;
+                i += 2;
+            }
+            else
+            {
+                pos += 1;
+                i += 1;
+            }
+        }
+        reflowed.emplace_back(std::move(out));
+    }
+
+    m_evicted += m_lines.size();
+    m_lines.clear();
+    while (reflowed.size() > new_rows)
+    {
+        m_lines.emplace_back(std::move(reflowed.front()));
+        reflowed.pop_front();
+    }
+    for (auto &r : reflowed) m_lines.emplace_back(std::move(r));
+    while (m_lines.size() < new_rows) m_lines.emplace_back(new_columns);
 
     m_screen_rows = new_rows;
+    m_columns    = new_columns;
+    m_view_offset = 0;
     trim_scrollback();
 
-    for (std::size_t i = 0; i < m_screen_rows; ++i) row_at(i).damage();
+    for (std::size_t j = 0; j < m_screen_rows; ++j) row_at(j).damage();
+
+    resize_delta delta {};
+    const auto  new_scrollback = scrollback_size();
+    if (new_scrollback >= old_scrollback)
+        delta.pushed = new_scrollback - old_scrollback;
+    else
+        delta.pulled = old_scrollback - new_scrollback;
 
     return delta;
 }

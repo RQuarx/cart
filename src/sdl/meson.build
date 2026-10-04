@@ -1,1 +1,1 @@
-sdl_src = files('font.cc', 'window.cc')
+sdl_src = files('font.cc', 'window.cc', 'event.cc')

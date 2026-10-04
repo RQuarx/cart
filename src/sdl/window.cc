@@ -13,6 +13,8 @@ auto window::create(const char *title, int w, int h) noexcept -> result<window>
         return shared::error { "Failed to create window and renderer: {}", SDL_GetError() }
             .unexpected();
 
+    SDL_SetRenderVSync(renderer, 1);
+
     return window { wind, renderer };
 }
 
@@ -20,7 +22,7 @@ auto window::create(const char *title, int w, int h) noexcept -> result<window>
 auto window::get_id() noexcept -> std::uint64_t { return SDL_GetWindowID(get()); }
 
 
-auto window::get_size()  -> std::pair<int, int>
+auto window::get_size() -> std::pair<int, int>
 {
     std::pair<int, int> size;
     if (!SDL_GetWindowSize(get(), &size.first, &size.second))
@@ -29,7 +31,7 @@ auto window::get_size()  -> std::pair<int, int>
 }
 
 
-auto window::get_size_in_pixels()  -> std::pair<int, int>
+auto window::get_size_in_pixels() -> std::pair<int, int>
 {
     std::pair<int, int> size;
     if (!SDL_GetWindowSizeInPixels(get(), &size.first, &size.second))
@@ -38,3 +40,19 @@ auto window::get_size_in_pixels()  -> std::pair<int, int>
 }
 
 
+auto window::get_display_scale() noexcept -> float { return SDL_GetWindowDisplayScale(get()); }
+auto window::get_pixel_density() noexcept -> float { return SDL_GetWindowPixelDensity(get()); }
+
+auto window::start_text_input() noexcept -> result<>
+{
+    if (!SDL_StartTextInput(get()))
+        return shared::error { "Failed to start text input: {}", SDL_GetError() }.unexpected();
+    return {};
+}
+
+auto window::stop_text_input() noexcept -> result<>
+{
+    if (!SDL_StopTextInput(get()))
+        return shared::error { "Failed to stop text input: {}", SDL_GetError() }.unexpected();
+    return {};
+}

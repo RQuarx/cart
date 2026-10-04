@@ -29,7 +29,7 @@ namespace cart::sdl
                     throw shared::error { "Failed to initialize SDL with flags {}: {}", F,
                                           SDL_GetError() };
                 if (!TTF_Init())
-                    throw shared::error { "Failed to initialize SDL_TTF: {}", F, SDL_GetError() };
+                    throw shared::error { "Failed to initialize SDL_TTF: {}", SDL_GetError() };
             }
         }
 

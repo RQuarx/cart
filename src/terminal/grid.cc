@@ -59,7 +59,7 @@ void grid::scroll_into_scrollback(std::size_t n)
 }
 
 
-auto grid::scroll_up(scroll_region r, std::size_t n) noexcept -> result<void>
+auto grid::scroll_up(scroll_region r, std::size_t n) noexcept -> result<>
 {
     n = std::min(n, r.bottom - r.top);
     if (n == 0) return {};
@@ -87,7 +87,7 @@ auto grid::scroll_up(scroll_region r, std::size_t n) noexcept -> result<void>
 }
 
 
-auto grid::scroll_down(scroll_region r, std::size_t n) noexcept -> result<void>
+auto grid::scroll_down(scroll_region r, std::size_t n) noexcept -> result<>
 {
     n = std::min(n, r.bottom - r.top);
     if (n == 0) return {};

@@ -14,13 +14,18 @@ namespace cart::sdl
 
 
         [[nodiscard]]
-        auto get_renderer(this auto &&self) noexcept -> renderer &&
+        auto get_renderer(this auto &&self) noexcept -> auto &
         { return self.m_renderer; }
 
 
         [[nodiscard]] auto get_id() noexcept -> std::uint64_t;
         [[nodiscard]] auto get_size() -> std::pair<int, int>;
         [[nodiscard]] auto get_size_in_pixels() -> std::pair<int, int>;
+        [[nodiscard]] auto get_display_scale() noexcept -> float;
+        [[nodiscard]] auto get_pixel_density() noexcept -> float;
+
+        auto start_text_input() noexcept -> result<>;
+        auto stop_text_input() noexcept -> result<>;
 
     private:
         renderer m_renderer;

@@ -67,7 +67,7 @@ auto window::create(std::string_view title, std::size_t rows, std::size_t column
 }
 
 
-auto window::run() noexcept -> result<void>
+auto window::run() noexcept -> result<>
 {
     SDL_Event event {};
     bool      running = true;

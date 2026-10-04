@@ -41,6 +41,6 @@ namespace cart::app
         static auto get_default() noexcept -> toml::table;
 
         void               mf_reload();
-        [[nodiscard]] auto mf_verify() const noexcept -> result<void>;
+        [[nodiscard]] auto mf_verify() const noexcept -> result<>;
     };
 }

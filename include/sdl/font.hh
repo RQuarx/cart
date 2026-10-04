@@ -9,7 +9,50 @@
 
 namespace cart::sdl
 {
-    class font;
+    class font final : object<>, public sptr<TTF_Font, TTF_CloseFont>
+    {
+    public:
+        struct metrics
+        {
+            struct
+            {
+                int min;
+                int max;
+            } x;
+
+            struct
+            {
+                int min;
+                int max;
+            } y;
+
+            int advance;
+        };
+
+
+        [[nodiscard]]
+        static auto get_path(const std::string &family) noexcept -> result<std::filesystem::path>;
+
+        [[nodiscard]]
+        static auto load(const std::filesystem::path &font_file, float pt) noexcept -> result<font>;
+
+        constexpr font(pointer ptr) noexcept : sptr { ptr } {}
+
+
+        [[nodiscard]] auto get_size() noexcept -> float;
+        auto               set_size(float pt) noexcept -> result<>;
+        auto set_size(float pt, int horizontal_dpi, int vertical_dpi) noexcept -> result<>;
+
+        [[nodiscard]] auto get_glyph_metrics(std::uint32_t character) -> metrics;
+        [[nodiscard]] auto get_ascent() noexcept -> int;
+        [[nodiscard]] auto get_descent() noexcept -> int;
+        [[nodiscard]] auto get_height() noexcept -> int;
+        [[nodiscard]] auto get_line_skip() noexcept -> int;
+
+        /** @return A pair containing the width, and height. */
+        [[nodiscard]] auto get_string_size(const std::string &string) -> std::pair<int, int>;
+        [[nodiscard]] auto is_monospace() noexcept -> bool;
+    };
 
 
     namespace _impl
@@ -34,22 +77,4 @@ namespace cart::sdl
 
         inline std::unordered_map<std::filesystem::path, font, font_hash> font_library;
     }
-
-
-    class font final : object<>, public sptr<TTF_Font, TTF_CloseFont>
-    {
-    public:
-        [[nodiscard]]
-        static auto get_path(const std::string &family) noexcept -> result<std::filesystem::path>;
-
-        [[nodiscard]]
-        static auto load(const std::filesystem::path &font_file, float pt) noexcept
-            -> result<font>;
-
-        constexpr font(pointer ptr) noexcept : sptr { ptr } {  }
-
-
-        auto get_size() noexcept -> float;
-        auto set_size(float pt) noexcept -> result<void>;
-    };
 }

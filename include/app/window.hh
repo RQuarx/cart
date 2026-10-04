@@ -20,7 +20,7 @@ namespace cart::app
                            std::size_t      rows    = 24,
                            std::size_t      columns = 80) noexcept -> result<window>;
 
-        auto run() noexcept -> result<void>;
+        auto run() noexcept -> result<>;
 
         window(window &&) noexcept                     = default;
         auto operator=(window &&) noexcept -> window & = default;

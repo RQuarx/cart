@@ -60,11 +60,11 @@ namespace cart::term
 
 
         /** @brief Scrolling content up/down inside a region (full screen by default) */
-        auto scroll_up(scroll_region region, std::size_t n = 1) noexcept -> result<void>;
-        auto scroll_down(scroll_region region, std::size_t n = 1) noexcept -> result<void>;
-        auto scroll_up(std::size_t n = 1) noexcept -> result<void>
+        auto scroll_up(scroll_region region, std::size_t n = 1) noexcept -> result<>;
+        auto scroll_down(scroll_region region, std::size_t n = 1) noexcept -> result<>;
+        auto scroll_up(std::size_t n = 1) noexcept -> result<>
         { return scroll_up({ 0, m_screen_rows }, n); }
-        auto scroll_down(std::size_t n = 1) noexcept -> result<void>
+        auto scroll_down(std::size_t n = 1) noexcept -> result<>
         { return scroll_down({ 0, m_screen_rows }, n); }
 
         auto resize(std::size_t new_rows, std::size_t new_columns) noexcept -> result<resize_delta>;

@@ -10,6 +10,7 @@ add_global_arguments([ '-DTOML_EXCEPTIONS=0' ], language: 'cpp')
 
 dependencies = [ dependency('sdl3'),
                  dependency('tomlplusplus'),
+                 dependency('fontconfig'),
                  dependency('boost.ut'),
                  dependency('spdlog'),
                  dependency('sdl3-ttf', fallback: [ 'sdl3_ttf', 'sdl3_ttf_dep' ]),

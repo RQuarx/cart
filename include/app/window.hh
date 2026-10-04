@@ -16,27 +16,24 @@ namespace cart::app
     {
     public:
         [[nodiscard]]
-        static auto create(std::string_view title, std::size_t rows = 24, std::size_t columns = 80) noexcept
-            -> result<window>;
+        static auto create(std::string_view title,
+                           std::size_t      rows    = 24,
+                           std::size_t      columns = 80) noexcept -> result<window>;
 
         auto run() noexcept -> result<void>;
 
-        window(window &&) noexcept            = default;
+        window(window &&) noexcept                     = default;
         auto operator=(window &&) noexcept -> window & = default;
 
-        window(const window &)                = delete;
+        window(const window &)                     = delete;
         auto operator=(const window &) -> window & = delete;
 
     private:
         struct sdl_window_deleter
-        {
-            void operator()(struct SDL_Window *p) const noexcept;
-        };
+        { void operator()(struct SDL_Window *p) const noexcept; };
 
         struct sdl_renderer_deleter
-        {
-            void operator()(struct SDL_Renderer *p) const noexcept;
-        };
+        { void operator()(struct SDL_Renderer *p) const noexcept; };
 
         using window_ptr   = std::unique_ptr<struct SDL_Window, sdl_window_deleter>;
         using renderer_ptr = std::unique_ptr<struct SDL_Renderer, sdl_renderer_deleter>;
@@ -48,9 +45,9 @@ namespace cart::app
         static constexpr std::size_t k_scrollback = 1000;
 
 
-        window_ptr  m_window;
+        window_ptr   m_window;
         renderer_ptr m_renderer;
-        term::grid  m_grid;
+        term::grid   m_grid;
 
 
         window(window_ptr w, renderer_ptr r, term::grid g) noexcept;

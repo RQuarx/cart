@@ -1,0 +1,34 @@
+#pragma once
+#include "sdl/object.hh"
+#include "sdl/pointer.hh"
+#include "sdl/renderer.hh"
+
+
+namespace cart::sdl
+{
+    class window final : object<>, public uptr<SDL_Window, SDL_DestroyWindow>
+    {
+    public:
+        [[nodiscard]]
+        static auto create(const char *title, int w, int h) noexcept -> result<window>;
+
+
+        [[nodiscard]]
+        auto get_renderer(this auto &&self) noexcept -> renderer &&
+        { return self.m_renderer; }
+
+
+        [[nodiscard]] auto get_id() noexcept -> std::uint64_t;
+        [[nodiscard]] auto get_size() -> std::pair<int, int>;
+        [[nodiscard]] auto get_size_in_pixels() -> std::pair<int, int>;
+
+    private:
+        renderer m_renderer;
+
+
+        constexpr window(pointer window, renderer::pointer renderer) noexcept
+            : uptr { window }, m_renderer { renderer }
+        {
+        }
+    };
+}

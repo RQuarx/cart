@@ -32,4 +32,8 @@ namespace cart::trait
     private:
         T m_data = 0;
     };
+
+
+    template <typename F>
+    concept function_ptr = std::is_pointer_v<F> and std::is_function_v<std::remove_pointer_t<F>>;
 }

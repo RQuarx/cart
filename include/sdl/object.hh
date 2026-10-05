@@ -15,7 +15,7 @@ namespace cart::sdl
     /** @brief A trait whose sole purpose is to check if SDL is intialized
      *         at an object construction. And if it is not initialized, initialize it.
      *
-     * @throw The constructor might throw a @ref shared::error object if the initalization failed.
+     * @throw The constructor might throw a @ref error object if the initalization failed.
      */
     template <SDL_InitFlags F = SDL_INIT_VIDEO>
     class object
@@ -26,10 +26,10 @@ namespace cart::sdl
             if (_impl::object_count.fetch_add(1) == 0)
             {
                 if (!SDL_Init(F))
-                    throw shared::error { "Failed to initialize SDL with flags {}: {}", F,
+                    throw error { "Failed to initialize SDL with flags {}: {}", F,
                                           SDL_GetError() };
                 if (!TTF_Init())
-                    throw shared::error { "Failed to initialize SDL_TTF: {}", SDL_GetError() };
+                    throw error { "Failed to initialize SDL_TTF: {}", SDL_GetError() };
             }
         }
 

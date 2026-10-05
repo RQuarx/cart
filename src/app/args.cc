@@ -18,7 +18,7 @@ args::args()
         this->working_directory = home;
     }
     else
-        throw shared::error { "$HOME is not set, aborting." };
+        throw error { "$HOME is not set, aborting." };
 
     if (char *res = std::getenv("XDG_CONFIG_HOME"); res != nullptr)
         this->config_file = std::filesystem::path { res } / metadata::name / "config.toml";
@@ -47,7 +47,7 @@ try
     /* clang-format on */
 
     if (auto res = cli.parse({ int(args.size()), args.begin().base() }); !res)
-        return shared::error { "Failed to parse command-line arguments: {}", res.message() }
+        return error { "Failed to parse command-line arguments: {}", res.message() }
             .unexpected();
 
     auto print = [](auto &&text)
@@ -63,7 +63,7 @@ try
 
     return parsed;
 }
-catch (shared::error &e)
+catch (error &e)
 {
     return e.unexpected();
 }

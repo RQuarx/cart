@@ -3,10 +3,11 @@
 #include "app/args.hh"
 #include "app/cart.hh"
 #include "app/window.hh"
-#include "metadata.hh"
+
+using namespace cart;
 
 
-auto cart::app::cart::run(std::span<char *const> argv) noexcept -> int
+auto app::cart::run(std::span<char *const> argv) noexcept -> int
 {
     struct args args;
 
@@ -17,30 +18,38 @@ auto cart::app::cart::run(std::span<char *const> argv) noexcept -> int
     }
     else
     {
-        spdlog::critical("{}", res.error().format());
+        spdlog::critical("{}", res.error());
         return 1;
     }
 
-    cart c {};
+    std::shared_ptr<config> config;
 
-    if (auto res = config::fetch(args.config_file); res.has_value())
-        c.m_config = *std::move(res);
+    if (auto res = config::parse(args.config_file); res.has_value())
+        config = *std::move(res);
     else
     {
-        spdlog::critical("{}", res.error().format());
+        spdlog::critical("{}", res.error());
         return 1;
     }
 
-    auto win = window::create(metadata::name);
-    if (!win.has_value())
+    if (auto res = window::create(config); res.has_value())
     {
-        spdlog::critical("{}", win.error().format());
-        return 1;
-    }
+        cart c { std::move(args), std::move(config), std::move(*res) };
 
-    if (auto res = win->run(); !res.has_value())
+        while (true)
+            if (auto res = c.on_frame(); res.has_value())
+            {
+                if (*res != action::continue_process) return std::to_underlying(*res);
+            }
+            else
+            {
+                spdlog::critical("{}", res.error());
+                return 1;
+            }
+    }
+    else
     {
-        spdlog::critical("{}", res.error().format());
+        spdlog::critical("{}", res.error());
         return 1;
     }
 
@@ -48,4 +57,19 @@ auto cart::app::cart::run(std::span<char *const> argv) noexcept -> int
 }
 
 
-cart::app::cart::cart() {}
+app::cart::cart(args &&args, std::shared_ptr<config> &&config, window &&window) noexcept
+    : m_args { std::move(args) }, m_window { std::move(window) }, m_config { std::move(config) }
+{ m_window.set_on_resize_callback(*this, &cart::mf_on_window_resized); }
+
+
+auto app::cart::on_frame() noexcept -> result<action>
+{
+    if (auto res = m_window.on_frame(); res.has_value() and *res != action::continue_process)
+        return res;
+
+    return action::continue_process;
+}
+
+
+void app::cart::mf_on_window_resized(int new_width, int new_height) noexcept
+{ spdlog::trace("Window resized ({} {})", new_width, new_height); }

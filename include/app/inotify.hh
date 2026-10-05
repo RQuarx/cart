@@ -12,12 +12,12 @@
 
 namespace cart::app
 {
-    class inotify_error final : public shared::error
+    class inotify_error final : public error
     {
     public:
         template <typename... Args>
-        inotify_error(shared::_impl::format_string<Args...> fmt, Args &&...args)
-            : shared::error { "inotify: {}", std::format(fmt.fmt, std::forward<Args>(args)...) }
+        inotify_error(_impl::format_string<Args...> fmt, Args &&...args)
+            : error { "inotify: {}", std::format(fmt.fmt, std::forward<Args>(args)...) }
         {
         }
     };

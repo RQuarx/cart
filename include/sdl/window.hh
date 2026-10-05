@@ -10,7 +10,8 @@ namespace cart::sdl
     {
     public:
         [[nodiscard]]
-        static auto create(const char *title, int w, int h) noexcept -> result<window>;
+        static auto create(const char *title, int w, int h) noexcept
+            -> result<std::pair<window, renderer>>;
 
 
         [[nodiscard]]
@@ -28,12 +29,6 @@ namespace cart::sdl
         auto stop_text_input() noexcept -> result<>;
 
     private:
-        renderer m_renderer;
-
-
-        constexpr window(pointer window, renderer::pointer renderer) noexcept
-            : uptr { window }, m_renderer { renderer }
-        {
-        }
+        constexpr window(pointer window) noexcept : uptr { window } {}
     };
 }

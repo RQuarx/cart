@@ -5,7 +5,7 @@
 #include <source_location>
 
 
-namespace cart::shared
+namespace cart
 {
     namespace _impl
     {
@@ -75,21 +75,26 @@ namespace cart::shared
     private:
         std::source_location source;
     };
-}
 
-namespace cart
-{
-    template <typename T = void, std::derived_from<shared::error> E = shared::error>
+
+    template <typename T = void, std::derived_from<error> E = error>
     using result = std::expected<T, E>;
+
+    enum class action : std::uint8_t
+    {
+        exit_success     = 0,
+        exit_failure     = 1,
+        continue_process = 2,
+    };
 }
 
 
 template <>
-struct std::formatter<cart::shared::error>
+struct std::formatter<cart::error>
 {
     constexpr auto parse(auto &ctx) { return ctx.begin(); }
 
     template <typename FormatContext>
-    auto format(const cart::shared::error &err, FormatContext &ctx) const -> FormatContext::iterator
+    auto format(const cart::error &err, FormatContext &ctx) const -> FormatContext::iterator
     { return std::format_to(ctx.out(), "{}", err.format()); }
 };

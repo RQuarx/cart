@@ -1,13 +1,12 @@
 #pragma once
 #include <memory>
-#include <string_view>
 
+#include "app/config.hh"
+#include "sdl/event.hh"
+#include "sdl/renderer.hh"
+#include "sdl/window.hh"
+#include "shared/callback.hh"
 #include "shared/result.hh"
-#include "terminal/grid.hh"
-
-
-struct SDL_Window;
-struct SDL_Renderer;
 
 
 namespace cart::app
@@ -15,43 +14,39 @@ namespace cart::app
     class window
     {
     public:
+        using resize_callback = callback<void(int, int)>;
+
+
         [[nodiscard]]
-        static auto create(std::string_view title,
-                           std::size_t      rows    = 24,
-                           std::size_t      columns = 80) noexcept -> result<window>;
+        static auto create(const std::shared_ptr<config> &config) noexcept -> result<window>;
 
-        auto run() noexcept -> result<>;
+        auto on_frame() noexcept -> result<action>;
 
-        window(window &&) noexcept                     = default;
-        auto operator=(window &&) noexcept -> window & = default;
+        [[nodiscard]]
+        auto get_window_size() noexcept -> std::pair<int, int>;
 
-        window(const window &)                     = delete;
-        auto operator=(const window &) -> window & = delete;
+        [[nodiscard]]
+        auto get_renderer() noexcept -> sdl::renderer &;
+
+        template <typename Self>
+        void set_on_resize_callback(Self &self, void (Self::*fn)(int, int))
+        { m_on_resize_callback.set(self, fn); }
+
 
     private:
-        struct sdl_window_deleter
-        { void operator()(struct SDL_Window *p) const noexcept; };
+        sdl::window   m_window;
+        sdl::renderer m_renderer;
 
-        struct sdl_renderer_deleter
-        { void operator()(struct SDL_Renderer *p) const noexcept; };
-
-        using window_ptr   = std::unique_ptr<struct SDL_Window, sdl_window_deleter>;
-        using renderer_ptr = std::unique_ptr<struct SDL_Renderer, sdl_renderer_deleter>;
+        resize_callback m_on_resize_callback;
 
 
-        static constexpr int k_cell_w = 9;
-        static constexpr int k_cell_h = 18;
-
-        static constexpr std::size_t k_scrollback = 1000;
-
-
-        window_ptr   m_window;
-        renderer_ptr m_renderer;
-        term::grid   m_grid;
+        constexpr window(sdl::window &&window, sdl::renderer &&renderer) noexcept
+            : m_window { std::move(window) }, m_renderer { std::move(renderer) }
+        {
+        }
 
 
-        window(window_ptr w, renderer_ptr r, term::grid g) noexcept;
-
-        auto mf_handle_resize(int px_w, int px_h) noexcept -> void;
+        [[nodiscard]]
+        auto mf_handle_window_event(const sdl::event &event) noexcept -> result<action>;
     };
 }

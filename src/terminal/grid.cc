@@ -11,7 +11,7 @@ auto grid::create(std::size_t rows, std::size_t columns, std::size_t scrollback_
 
 {
     if (rows == 0 or columns == 0)
-        return shared::error { "Invalid size passed (rows: {}, columns: {})", rows, columns }
+        return error { "Invalid size passed (rows: {}, columns: {})", rows, columns }
             .unexpected();
     return grid { rows, columns, scrollback_limit };
 }
@@ -117,7 +117,7 @@ namespace
 auto grid::resize(std::size_t new_rows, std::size_t new_columns) noexcept -> result<resize_delta>
 {
     if (new_rows == 0 or new_columns == 0)
-        return shared::error { "Invalid new size, 0 is not allowed." }.unexpected();
+        return error { "Invalid new size, 0 is not allowed." }.unexpected();
 
     if (new_rows == m_screen_rows and new_columns == m_columns) return resize_delta {};
 

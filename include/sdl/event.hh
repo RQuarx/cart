@@ -90,9 +90,11 @@ namespace cart::sdl
 
         /** @brief Handle everything currently queued. */
         template <typename F>
-        static void drain(F &&handler)
+        static auto drain(F &&handler) noexcept -> result<action>
         {
-            while (auto e = poll()) handler(*e);
+            while (auto e = poll())
+                if (auto res = handler(*e); !res or *res != action::continue_process) return res;
+            return action::continue_process;
         }
 
         /** @brief Post an event from any thread. */

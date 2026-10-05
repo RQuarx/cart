@@ -30,6 +30,8 @@ namespace cart::term
                            std::size_t columns,
                            std::size_t scrollback_limit = 0) noexcept -> result<grid>;
 
+        grid() = default;
+
 
         /** @brief Screen rows: 0 = top of the screen */
         [[nodiscard]]

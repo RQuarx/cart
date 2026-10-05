@@ -1,0 +1,1 @@
+config_src = files('colors.cc', 'cursor.cc', 'font.cc', 'scrolling.cc', 'terminal.cc', 'window.cc')

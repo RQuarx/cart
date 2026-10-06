@@ -44,7 +44,11 @@ namespace cart
             { return (self->*fn)(std::forward<Args>(args)...); };
         }
 
-        auto operator()(Args... args) -> R { return m_fn(std::forward<Args>(args)...); }
+        auto operator()(Args... args) -> R
+        {
+            if (m_fn) return m_fn(std::forward<Args>(args)...);
+            return R {};
+        }
 
     private:
         std::function<auto(Args...)->R> m_fn;

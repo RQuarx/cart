@@ -7,7 +7,7 @@ using cart::app::cfg::font;
 auto font::parse(const toml::table &font) noexcept -> result<>
 try
 {
-    std::array map {
+    std::array faces {
         std::pair { "normal",      std::ref(m_normal)      },
         std::pair { "bold",        std::ref(m_bold)        },
         std::pair { "italic",      std::ref(m_italic)      },
@@ -22,33 +22,21 @@ try
             continue;
         }
 
+        auto *const it = std::ranges::find(faces, std::string_view { key },
+                                           &decltype(faces)::value_type::first);
+        if (it == faces.end())
+            return error { "Unexpected node in font: {}", key.str() }.unexpected();
 
-        for (const auto &[name, member] : map)
+        for (const auto &[key_, value_] : utils::as<toml::table>(key, value))
         {
-            if (key != name) continue;
-
-            for (const auto &[key_, value_] : utils::as<toml::table>(key, value))
-            {
-                bool touched = false;
-
-                for (const auto &[name_, pair_member] : {
-                         std::pair { "family", family },
-                         std::pair { "style",  style  },
-                })
-                    if (key == name_)
-                    {
-                        member.get().*pair_member = utils::as<std::string>(key_, value_);
-                        touched                   = true;
-                        break;
-                    }
-
-                if (touched) continue;
+            if (key_ == "family")
+                it->second.get().*family = utils::as<std::string>(key_, value_);
+            else if (key_ == "style")
+                it->second.get().*style = utils::as<std::string>(key_, value_);
+            else
                 return error { "Unexpected node in font.{}: {}", key.str(), key_.str() }
                     .unexpected();
-            }
         }
-
-        return error { "Unexpected node in font: {}", key.str() }.unexpected();
     }
 
     return {};

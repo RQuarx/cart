@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "app/config/base.hh"
+#include "terminal/theme.hh"
 
 
 namespace cart::app::cfg
@@ -45,6 +46,8 @@ namespace cart::app::cfg
             case intensity::normal: return "normal";
             case intensity::dim:    return "dim";
             }
+
+            std::unreachable();
         }
 
     public:
@@ -69,6 +72,20 @@ namespace cart::app::cfg
         [[nodiscard]]
         constexpr auto get_bold_is_bright() const noexcept -> bool
         { return m_bold_as_bright; }
+
+
+        [[nodiscard]]
+        constexpr auto to_theme() const noexcept -> term::theme
+        {
+            term::theme t;
+
+            std::memcpy(&t.palette, &m_palette, sizeof t.palette);
+            std::memcpy(&t.foreground, &m_foreground, sizeof t.foreground);
+            std::memcpy(&t.background, &m_background, sizeof t.background);
+            t.bold_as_bright = m_bold_as_bright;
+
+            return t;
+        }
 
 
     private:

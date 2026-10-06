@@ -6,24 +6,21 @@
 
 namespace cart::term
 {
-    using namespace std::chrono_literals;
-
-
     struct cursor
     {
         enum class shape : std::uint8_t
         {
-            beam,
-            underline,
-            block
+            beam      = 0,
+            block     = 1,
+            underline = 2,
         };
 
         enum class blink_mode : std::uint8_t
         {
-            never,
-            off,
-            on,
-            always
+            never  = 0,
+            off    = 1,
+            on     = 2,
+            always = 3
         };
 
         struct attribute
@@ -37,6 +34,6 @@ namespace cart::term
             bool                      last_column_flag = false;
         } attribute;
 
-        position pos;
+        position pos { 0, 0 };
     };
 }

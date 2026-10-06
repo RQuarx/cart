@@ -53,6 +53,8 @@ try
 {
     auto cfg = std::make_shared<config>();
 
+    cfg->m_config_file = config_file;
+
     if (auto res = cfg->mf_reload(); !res)
     {
         if (!std::filesystem::exists(config_file))
@@ -68,8 +70,6 @@ try
 
         return res.error().unexpected();
     }
-
-    cfg->m_config_file = config_file;
 
     auto fn = [cfg](result<std::reference_wrapper<const ::inotify_event>> res)
     {

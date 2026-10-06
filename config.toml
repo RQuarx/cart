@@ -28,7 +28,7 @@ dynamic_padding = false
 title = "cart"
 
 [scrolling]
-history = 100000
+scrollback = 100000
 multiplier = 3 # Amount of lines scrolled during a single scroll input
 
 [font]

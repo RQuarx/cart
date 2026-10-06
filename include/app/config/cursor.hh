@@ -1,5 +1,6 @@
 #pragma once
 #include "app/config/base.hh"
+#include "terminal/cursor.hh"
 
 
 namespace cart::app::cfg
@@ -11,17 +12,17 @@ namespace cart::app::cfg
     public:
         enum class shape : std::uint8_t
         {
-            beam,
-            block,
-            underline,
+            beam      = 0,
+            block     = 1,
+            underline = 2,
         };
 
         enum class blinking_mode : std::uint8_t
         {
-            never,
-            off,
-            on,
-            always,
+            never  = 0,
+            off    = 1,
+            on     = 2,
+            always = 3,
         };
 
 
@@ -60,13 +61,25 @@ namespace cart::app::cfg
         constexpr auto get_blinking() const noexcept -> blinking_mode
         { return m_blinking; }
 
+
+        [[nodiscard]]
+        constexpr auto to_cursor() const noexcept -> term::cursor
+        {
+            term::cursor c;
+
+            std::memcpy(&c.attribute, reinterpret_cast<const std::byte *>(this) + 8,
+                        sizeof c.attribute);
+
+            return c;
+        }
+
     private:
         std::chrono::milliseconds m_blink_interval   = 740ms;
         std::chrono::seconds      m_blink_timeout    = 5s;
         float                     m_thickness        = 0.15F;
-        bool                      m_unfocused_hollow = true;
         shape                     m_shape            = shape::beam;
         blinking_mode             m_blinking         = blinking_mode::on;
+        bool                      m_unfocused_hollow = true;
 
 
         [[nodiscard]]

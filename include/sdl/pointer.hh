@@ -1,10 +1,23 @@
 #pragma once
-#include <functional>
 #include <memory>
 
 
 namespace cart::sdl
 {
+    namespace _impl
+    {
+        template <typename P, auto D>
+        struct deleter_type
+        {
+            void operator()(P ptr) const noexcept
+            {
+                D(ptr);
+                ptr = nullptr;
+            }
+        };
+    }
+
+
     template <typename T, auto D>
     class uptr
     {
@@ -12,11 +25,7 @@ namespace cart::sdl
         using value_type    = T;
         using pointer       = value_type *;
         using const_pointer = const value_type *;
-
-        struct deleter_type
-        {
-            void operator()(pointer ptr) const noexcept { std::invoke(D, ptr); }
-        };
+        using deleter_type  = _impl::deleter_type<pointer, D>;
 
 
         constexpr uptr(pointer p = pointer()) noexcept : m_ptr { p } {}
@@ -39,18 +48,14 @@ namespace cart::sdl
     };
 
 
-    template <typename T, void (*D)(T *)>
+    template <typename T, auto D>
     class sptr
     {
     public:
         using value_type    = T;
         using pointer       = value_type *;
         using const_pointer = const value_type *;
-
-        struct deleter_type
-        {
-            void operator()(pointer ptr) const noexcept { D(ptr); }
-        };
+        using deleter_type  = _impl::deleter_type<pointer, D>;
 
 
         constexpr sptr(pointer p = pointer()) noexcept : m_ptr { p, deleter_type {} } {}

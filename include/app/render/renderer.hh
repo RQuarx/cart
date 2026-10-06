@@ -12,7 +12,7 @@ namespace cart::app::render
 
 
         [[nodiscard]]
-        auto on_frame(const term::theme &theme) noexcept -> result<action>;
+        auto on_frame(const config &config) noexcept -> result<action>;
 
     private:
         sdl::renderer m_renderer;

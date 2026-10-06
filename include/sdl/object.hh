@@ -26,10 +26,8 @@ namespace cart::sdl
             if (_impl::object_count.fetch_add(1) == 0)
             {
                 if (!SDL_Init(F))
-                    throw error { "Failed to initialize SDL with flags {}: {}", F,
-                                          SDL_GetError() };
-                if (!TTF_Init())
-                    throw error { "Failed to initialize SDL_TTF: {}", SDL_GetError() };
+                    throw error { "Failed to initialize SDL with flags {}: {}", F, SDL_GetError() };
+                if (!TTF_Init()) throw error { "Failed to initialize SDL_TTF: {}", SDL_GetError() };
             }
         }
 
@@ -41,5 +39,10 @@ namespace cart::sdl
                 SDL_Quit();
             };
         }
+
+        object(const object & /* unused */) : object() {}
+        object(object && /* unused */) noexcept : object() {}
+        object &operator=(const object &) = default;
+        object &operator=(object &&)      = default;
     };
 }

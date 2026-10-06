@@ -1,6 +1,4 @@
 #pragma once
-#include <memory>
-
 #include "app/config.hh"
 #include "sdl/event.hh"
 #include "sdl/renderer.hh"
@@ -18,7 +16,7 @@ namespace cart::app
 
 
         [[nodiscard]]
-        static auto create(const std::shared_ptr<config> &config) noexcept -> result<window>;
+        static auto create(const config &config) noexcept -> result<window>;
 
         auto on_frame() noexcept -> result<action>;
 
@@ -26,7 +24,7 @@ namespace cart::app
         auto get_window_size() noexcept -> std::pair<int, int>;
 
         [[nodiscard]]
-        auto get_renderer() noexcept -> sdl::renderer &;
+        auto get_renderer() noexcept -> sdl::renderer;
 
         template <typename Self>
         void set_on_resize_callback(Self &self, void (Self::*fn)(int, int))

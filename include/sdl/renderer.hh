@@ -1,6 +1,7 @@
 #pragma once
 #include <SDL3/SDL_render.h>
 
+#include "sdl/color.hh"
 #include "sdl/object.hh"
 #include "sdl/pointer.hh"
 
@@ -11,8 +12,11 @@ namespace cart::sdl
     {
     public:
         renderer() = default;
-        constexpr renderer(SDL_Renderer *renderer) noexcept { reset(renderer); }
+        constexpr renderer(pointer renderer) noexcept : sptr { renderer } {}
 
-    private:
+
+        auto set_draw_color(color color) noexcept -> result<>;
+        auto clear(color clear_color) noexcept -> result<>;
+        auto present() noexcept -> result<>;
     };
 }

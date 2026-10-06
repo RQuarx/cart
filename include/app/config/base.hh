@@ -4,7 +4,7 @@
 #include "shared/result.hh"
 
 
-namespace cart::app::conf
+namespace cart::app::cfg
 {
     struct base
     {

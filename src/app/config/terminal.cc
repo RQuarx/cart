@@ -1,7 +1,7 @@
 #include "app/config/terminal.hh"
 #include "app/config/utils.hh"
 
-using cart::app::conf::terminal;
+using cart::app::cfg::terminal;
 
 
 auto terminal::parse(const toml::table &terminal) noexcept -> result<>

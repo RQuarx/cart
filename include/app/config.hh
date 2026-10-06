@@ -39,12 +39,12 @@ namespace cart::app
         }
 
 
-        [[nodiscard]] auto get_colors() const noexcept -> const conf::colors &;
-        [[nodiscard]] auto get_cursor() const noexcept -> const conf::cursor &;
-        [[nodiscard]] auto get_font() const noexcept -> const conf::font &;
-        [[nodiscard]] auto get_scrolling() const noexcept -> const conf::scrolling &;
-        [[nodiscard]] auto get_terminal() const noexcept -> const conf::terminal &;
-        [[nodiscard]] auto get_window() const noexcept -> const conf::window &;
+        [[nodiscard]] auto get_colors() const noexcept -> const cfg::colors &;
+        [[nodiscard]] auto get_cursor() const noexcept -> const cfg::cursor &;
+        [[nodiscard]] auto get_font() const noexcept -> const cfg::font &;
+        [[nodiscard]] auto get_scrolling() const noexcept -> const cfg::scrolling &;
+        [[nodiscard]] auto get_terminal() const noexcept -> const cfg::terminal &;
+        [[nodiscard]] auto get_window() const noexcept -> const cfg::window &;
 
 
     private:
@@ -54,7 +54,7 @@ namespace cart::app
 
         std::filesystem::path m_config_file;
 
-        std::unordered_map<std::string, std::unique_ptr<conf::base>, heterogeneous_hash> m_configs;
+        std::unordered_map<std::string, std::unique_ptr<cfg::base>, heterogeneous_hash> m_configs;
 
 
         auto mf_reload() noexcept -> result<>;

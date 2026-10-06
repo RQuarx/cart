@@ -5,7 +5,7 @@
 #include "app/config/base.hh"
 
 
-namespace cart::app::conf
+namespace cart::app::cfg
 {
     class colors final : public base
     {

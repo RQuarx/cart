@@ -101,12 +101,12 @@ catch (const std::bad_alloc &e)
 config::config()
 {
     m_configs.reserve(5);
-    m_configs.emplace("colors", std::make_unique<conf::colors>());
-    m_configs.emplace("cursor", std::make_unique<conf::cursor>());
-    m_configs.emplace("font", std::make_unique<conf::font>());
-    m_configs.emplace("scrolling", std::make_unique<conf::scrolling>());
-    m_configs.emplace("terminal", std::make_unique<conf::terminal>());
-    m_configs.emplace("window", std::make_unique<conf::window>());
+    m_configs.emplace("colors", std::make_unique<cfg::colors>());
+    m_configs.emplace("cursor", std::make_unique<cfg::cursor>());
+    m_configs.emplace("font", std::make_unique<cfg::font>());
+    m_configs.emplace("scrolling", std::make_unique<cfg::scrolling>());
+    m_configs.emplace("terminal", std::make_unique<cfg::terminal>());
+    m_configs.emplace("window", std::make_unique<cfg::window>());
 }
 
 
@@ -116,11 +116,11 @@ auto config::mf_reload() noexcept -> result<>
 
     if (toml::parse_result res = toml::parse_file(m_config_file.string()); res.succeeded())
     {
-        for (const auto &[key, conf] : m_configs)
-            if (auto table = conf::utils::get<toml::table>(res.table(), key); table.has_value())
+        for (const auto &[key, cfg] : m_configs)
+            if (auto table = cfg::utils::get<toml::table>(res.table(), key); table.has_value())
             {
                 spdlog::info("Parsing config for {}.", key);
-                if (auto res = conf->parse(*table); !res) return res.error().unexpected();
+                if (auto res = cfg->parse(*table); !res) return res.error().unexpected();
             }
     }
     else
@@ -131,26 +131,26 @@ auto config::mf_reload() noexcept -> result<>
 }
 
 
-auto config::get_colors() const noexcept -> const conf::colors &
-{ return dynamic_cast<const conf::colors &>(*m_configs.find("colors")->second); }
+auto config::get_colors() const noexcept -> const cfg::colors &
+{ return dynamic_cast<const cfg::colors &>(*m_configs.find("colors")->second); }
 
 
-auto config::get_cursor() const noexcept -> const conf::cursor &
-{ return dynamic_cast<const conf::cursor &>(*m_configs.find("cursor")->second); }
+auto config::get_cursor() const noexcept -> const cfg::cursor &
+{ return dynamic_cast<const cfg::cursor &>(*m_configs.find("cursor")->second); }
 
 
-auto config::get_font() const noexcept -> const conf::font &
-{ return dynamic_cast<const conf::font &>(*m_configs.find("font")->second); }
+auto config::get_font() const noexcept -> const cfg::font &
+{ return dynamic_cast<const cfg::font &>(*m_configs.find("font")->second); }
 
 
-auto config::get_scrolling() const noexcept -> const conf::scrolling &
-{ return dynamic_cast<const conf::scrolling &>(*m_configs.find("scrolling")->second); }
+auto config::get_scrolling() const noexcept -> const cfg::scrolling &
+{ return dynamic_cast<const cfg::scrolling &>(*m_configs.find("scrolling")->second); }
 
 
-auto config::get_terminal() const noexcept -> const conf::terminal &
-{ return dynamic_cast<const conf::terminal &>(*m_configs.find("terminal")->second); }
+auto config::get_terminal() const noexcept -> const cfg::terminal &
+{ return dynamic_cast<const cfg::terminal &>(*m_configs.find("terminal")->second); }
 
 
-auto config::get_window() const noexcept -> const conf::window &
-{ return dynamic_cast<const conf::window &>(*m_configs.find("window")->second); }
+auto config::get_window() const noexcept -> const cfg::window &
+{ return dynamic_cast<const cfg::window &>(*m_configs.find("window")->second); }
 

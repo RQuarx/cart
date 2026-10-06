@@ -1,7 +1,7 @@
 #include "app/config/scrolling.hh"
 #include "app/config/utils.hh"
 
-using cart::app::conf::scrolling;
+using cart::app::cfg::scrolling;
 
 
 auto scrolling::parse(const toml::table &scrolling) noexcept -> result<>

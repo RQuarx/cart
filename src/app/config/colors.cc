@@ -6,7 +6,7 @@
 #include "app/config/colors.hh"
 #include "app/config/utils.hh"
 
-using namespace cart::app::conf;
+using namespace cart::app::cfg;
 
 namespace
 {

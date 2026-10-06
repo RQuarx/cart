@@ -1,7 +1,7 @@
 #include "app/config/font.hh"
 #include "app/config/utils.hh"
 
-using cart::app::conf::font;
+using cart::app::cfg::font;
 
 
 auto font::parse(const toml::table &font) noexcept -> result<>

@@ -1,7 +1,7 @@
 #include "app/config/utils.hh"
 #include "app/config/window.hh"
 
-using cart::app::conf::window;
+using cart::app::cfg::window;
 
 
 auto window::parse(const toml::table &window) noexcept -> result<>

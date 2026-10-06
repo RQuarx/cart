@@ -2,7 +2,7 @@
 #include "app/config/base.hh"
 
 
-namespace cart::app::conf
+namespace cart::app::cfg
 {
     class scrolling final : public base
     {

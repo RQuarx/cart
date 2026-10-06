@@ -32,12 +32,16 @@ namespace cart::sdl
 
 
         [[nodiscard]]
-        static auto get_path(const std::string &family) noexcept -> result<std::filesystem::path>;
+        static auto get_path(std::string_view family, std::string_view style) noexcept
+            -> result<std::filesystem::path>;
 
         [[nodiscard]]
-        static auto load(const std::filesystem::path &font_file, float pt) noexcept -> result<font>;
+        static auto load(const std::filesystem::path &font_file,
+                         float                        pt,
+                         std::string_view             style) noexcept -> result<font>;
 
         constexpr font(pointer ptr) noexcept : sptr { ptr } {}
+        font() = default;
 
 
         [[nodiscard]] auto get_size() noexcept -> float;
@@ -53,6 +57,8 @@ namespace cart::sdl
         /** @return A pair containing the width, and height. */
         [[nodiscard]] auto get_string_size(const std::string &string) -> std::pair<int, int>;
         [[nodiscard]] auto is_monospace() noexcept -> bool;
+
+        auto set_style(std::string_view style_string) noexcept -> result<>;
     };
 
 

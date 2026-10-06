@@ -1,11 +1,54 @@
+#include <algorithm>
+
 #include <fontconfig/fontconfig.h>
 
 #include "sdl/font.hh"
 
 using cart::sdl::font;
 
+namespace
+{
+    [[nodiscard]]
+    auto parse_font_style(std::string_view text) noexcept -> std::optional<TTF_FontStyleFlags>
+    {
+        constexpr std::string_view separators = " \t|,+";
+        TTF_FontStyleFlags         flags      = TTF_STYLE_NORMAL;
 
-auto font::get_path(const std::string &family) noexcept -> result<std::filesystem::path>
+        while (true)
+        {
+            const auto start = text.find_first_not_of(separators);
+            if (start == std::string_view::npos) break;
+            text.remove_prefix(start);
+
+            const auto             end        = text.find_first_of(separators);
+            const std::string_view token_view = text.substr(0, end);
+            text.remove_prefix(end == std::string_view::npos ? text.size() : end);
+
+            std::string token { token_view };
+            std::ranges::transform(token, token.begin(), [](unsigned char c)
+                                   { return static_cast<char>(std::tolower(c)); });
+
+            if (token == "normal" or token == "regular")
+                ;
+            else if (token == "bold")
+                flags |= TTF_STYLE_BOLD;
+            else if (token == "italic")
+                flags |= TTF_STYLE_ITALIC;
+            else if (token == "underline")
+                flags |= TTF_STYLE_UNDERLINE;
+            else if (token == "strikethrough")
+                flags |= TTF_STYLE_STRIKETHROUGH;
+            else
+                return std::nullopt;
+        }
+
+        return flags;
+    }
+}
+
+
+auto font::get_path(std::string_view family, std::string_view style) noexcept
+    -> result<std::filesystem::path>
 {
     if (std::filesystem::exists(family) and std::filesystem::is_regular_file(family)) return family;
 
@@ -13,7 +56,8 @@ auto font::get_path(const std::string &family) noexcept -> result<std::filesyste
     if (cfg == nullptr) return error { "Failed to initialize fontconfig" }.unexpected();
 
     FcPattern *pattern = FcPatternCreate();
-    FcPatternAddString(pattern, FC_FAMILY, reinterpret_cast<const FcChar8 *>(family.c_str()));
+    FcPatternAddString(pattern, FC_FAMILY, reinterpret_cast<const FcChar8 *>(family.data()));
+    FcPatternAddString(pattern, FC_STYLE, reinterpret_cast<const FcChar8 *>(style.data()));
 
     std::filesystem::path path;
     FcResult              res;
@@ -34,7 +78,8 @@ auto font::get_path(const std::string &family) noexcept -> result<std::filesyste
 }
 
 
-auto font::load(const std::filesystem::path &font_file, float pt) noexcept -> result<font>
+auto font::load(const std::filesystem::path &font_file, float pt, std::string_view style) noexcept
+    -> result<font>
 {
     if (auto it = _impl::font_library.find(font_file); it != _impl::font_library.end())
     {
@@ -47,11 +92,12 @@ auto font::load(const std::filesystem::path &font_file, float pt) noexcept -> re
     if (TTF_Font *f = TTF_OpenFont(font_file.c_str(), pt); f != nullptr)
     {
         TTF_SetFontKerning(f, false);
-        return _impl::font_library.emplace(font_file, f).first->second;
+        auto &font = _impl::font_library.emplace(font_file, f).first->second;
+        if (auto res = font.set_style(style); !res) return res.error().unexpected();
+        return font;
     }
 
-    return error { "Failed to open font file \"{}\": {}", font_file.c_str(),
-                           SDL_GetError() }
+    return error { "Failed to open font file \"{}\": {}", font_file.c_str(), SDL_GetError() }
         .unexpected();
 }
 
@@ -76,8 +122,7 @@ auto font::get_glyph_metrics(std::uint32_t character) -> metrics
 {
     metrics m;
     if (!TTF_GetGlyphMetrics(get(), character, &m.x.min, &m.x.max, &m.y.min, &m.y.max, &m.advance))
-        throw error { "Failed to get glyph metrics for '{}': {}", character,
-                              SDL_GetError() };
+        throw error { "Failed to get glyph metrics for '{}': {}", character, SDL_GetError() };
     return m;
 }
 
@@ -91,10 +136,21 @@ auto font::get_string_size(const std::string &string) -> std::pair<int, int>
     std::pair<int, int> res;
 
     if (!TTF_GetStringSize(get(), string.c_str(), string.size(), &res.first, &res.second))
-        throw error { "Failed to get the size of string \"{}\": {}", string,
-                              SDL_GetError() };
+        throw error { "Failed to get the size of string \"{}\": {}", string, SDL_GetError() };
     return res;
 }
 
 
 auto font::is_monospace() noexcept -> bool { return TTF_FontIsFixedWidth(get()); }
+
+
+auto font::set_style(std::string_view style_string) noexcept -> result<>
+{
+    if (auto res = parse_font_style(style_string); res.has_value())
+    {
+        TTF_SetFontStyle(get(), *res);
+        return {};
+    }
+
+    return error { "Style string (\"{}\") contains an invalid style.", style_string }.unexpected();
+}

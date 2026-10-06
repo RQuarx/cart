@@ -10,7 +10,7 @@ namespace cart::app::cfg
 
     public:
         static constexpr auto family = &string_pair::first;
-        static constexpr auto style  = &string_pair::first;
+        static constexpr auto style  = &string_pair::second;
 
 
         [[nodiscard]]

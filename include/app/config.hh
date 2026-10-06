@@ -57,6 +57,6 @@ namespace cart::app
         std::unordered_map<std::string, std::unique_ptr<conf::base>, heterogeneous_hash> m_configs;
 
 
-        void mf_reload();
+        auto mf_reload() noexcept -> result<>;
     };
 }

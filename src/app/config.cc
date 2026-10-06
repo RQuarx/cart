@@ -53,16 +53,7 @@ try
 {
     auto cfg = std::make_shared<config>();
 
-    if (toml::parse_result res = toml::parse_file(config_file.string()); res.succeeded())
-    {
-        for (const auto &[key, conf] : cfg->m_configs)
-            if (auto table = conf::utils::get<toml::table>(res.table(), key); table.has_value())
-            {
-                spdlog::info("Parsing config for {}.", key);
-                if (auto res = conf->parse(*table); !res) return res.error().unexpected();
-            }
-    }
-    else
+    if (auto res = cfg->mf_reload(); !res)
     {
         if (!std::filesystem::exists(config_file))
         {
@@ -75,23 +66,23 @@ try
             return cfg;
         }
 
-        return config_error { res.error() }.unexpected();
+        return res.error().unexpected();
     }
 
     cfg->m_config_file = config_file;
 
     auto fn = [cfg](result<std::reference_wrapper<const ::inotify_event>> res)
     {
-        if (res.has_value())
+        if (!res)
         {
-            std::string_view name { res->get().name, res->get().len };
-
-            spdlog::info("Config file {} has been modified, reloading config.", name);
-            cfg->mf_reload();
+            spdlog::error("{}", res.error());
             return;
         }
 
-        spdlog::error("{}", res.error());
+        std::string_view name { res->get().name, res->get().len };
+
+        spdlog::info("Config file {} has been modified, reloading config.", name);
+        if (auto res = cfg->mf_reload(); !res) spdlog::error("{}", res.error());
     };
 
     if (auto res = create_fs_watcher(config_file, fn); res.has_value())
@@ -119,7 +110,7 @@ config::config()
 }
 
 
-void config::mf_reload()
+auto config::mf_reload() noexcept -> result<>
 {
     std::scoped_lock lock { m_mtx };
 
@@ -128,14 +119,15 @@ void config::mf_reload()
         for (const auto &[key, conf] : m_configs)
             if (auto table = conf::utils::get<toml::table>(res.table(), key); table.has_value())
             {
-                spdlog::info("Reparsing config for {}.", key);
-                if (auto res = conf->parse(*table); !res) spdlog::error("{}", res.error());
+                spdlog::info("Parsing config for {}.", key);
+                if (auto res = conf->parse(*table); !res) return res.error().unexpected();
             }
     }
     else
-        spdlog::error("{}", config_error { res.error() }.what());
+        return config_error { res.error() }.unexpected();
 
     m_config_changed_callback();
+    return {};
 }
 
 

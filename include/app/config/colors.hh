@@ -35,7 +35,7 @@ namespace cart::app::conf
             { return self.values[std::to_underlying(i)]; }
         };
 
-    public:
+
         [[nodiscard]]
         static constexpr auto intensity_to_string(intensity intense) noexcept -> std::string_view
         {
@@ -47,7 +47,7 @@ namespace cart::app::conf
             }
         }
 
-
+    public:
         static auto get_default() noexcept -> const colors &;
         auto        parse(const toml::table &colors) noexcept -> result<> override;
 

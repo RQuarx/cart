@@ -9,25 +9,28 @@
 
 namespace cart::sdl
 {
-    template <SDL_InitFlags F>
-    struct runtime_policy
+    namespace _impl
     {
-        static auto init() noexcept -> result<>
+        template <SDL_InitFlags F>
+        struct runtime_policy
         {
-            if (!SDL_Init(F))
-                return sdl::error { "Failed to initialize SDL with flags {}", F }.unexpected();
-            if (!TTF_Init()) return sdl::error { "Failed to initialize SDL_TTF" }.unexpected();
-            return {};
-        }
+            static auto init() noexcept -> result<>
+            {
+                if (!SDL_Init(F))
+                    return sdl::error { "Failed to initialize SDL with flags {}", F }.unexpected();
+                if (!TTF_Init()) return sdl::error { "Failed to initialize SDL_TTF" }.unexpected();
+                return {};
+            }
 
-        static void deinit()
-        {
-            TTF_Quit();
-            SDL_Quit();
-        }
-    };
+            static void deinit()
+            {
+                TTF_Quit();
+                SDL_Quit();
+            }
+        };
+    }
 
 
     template <SDL_InitFlags F = SDL_INIT_VIDEO>
-    using runtime_guard = trait::runtime_guard<runtime_policy<F>>;
+    using runtime_guard = trait::runtime_guard<_impl::runtime_policy<F>>;
 }

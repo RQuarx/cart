@@ -60,8 +60,8 @@ namespace cart::sdl
 
     struct rect final
     {
-        point pos;
-        size  size;
+        sdl::point pos;
+        sdl::size  size;
 
 
         constexpr rect(point p, struct size s) noexcept : pos { p }, size { s } {}

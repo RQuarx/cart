@@ -6,7 +6,8 @@
 
 namespace cart::sdl
 {
-    class surface final : runtime_guard<>, public trait::unique_handle_of<SDL_Surface, SDL_DestroySurface>
+    class surface final : runtime_guard<>,
+                          public trait::unique_handle_of<SDL_Surface, SDL_DestroySurface>
     {
     public:
         using unique_handle_of::unique_handle_of;

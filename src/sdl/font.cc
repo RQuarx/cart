@@ -46,64 +46,88 @@ namespace
 
         return flags;
     }
+
+
+    auto get_path(std::string_view family, std::string_view style) noexcept
+        -> cart::result<std::filesystem::path>
+    {
+        if (std::filesystem::exists(family) and std::filesystem::is_regular_file(family))
+            return family;
+
+        FcConfig *cfg = FcInitLoadConfigAndFonts();
+        if (cfg == nullptr) return cart::error { "Failed to initialize fontconfig" }.unexpected();
+
+        FcPattern *pattern = FcPatternCreate();
+        FcPatternAddString(pattern, FC_FAMILY, reinterpret_cast<const FcChar8 *>(family.data()));
+        FcPatternAddString(pattern, FC_STYLE, reinterpret_cast<const FcChar8 *>(style.data()));
+
+        std::filesystem::path path;
+        FcResult              res;
+        if (FcPattern *matched = FcFontMatch(cfg, pattern, &res); matched != nullptr)
+        {
+            if (FcChar8 *file_path = nullptr;
+                FcPatternGetString(matched, FC_FILE, 0, &file_path) == FcResultMatch)
+                path = reinterpret_cast<char *>(file_path);
+            else
+                return cart::error { "Font family \"{}\" not found.", family }.unexpected();
+            FcPatternDestroy(matched);
+        }
+
+        FcPatternDestroy(pattern);
+        FcFini();
+
+        return path;
+    }
+
+
+    std::unordered_map<font::key, font> font_library;
 }
 
 
-auto font::get_path(std::string_view family, std::string_view style) noexcept
-    -> result<std::filesystem::path>
+auto font::open(std::string_view family, std::string_view style, float pt) noexcept -> result<font>
+try
 {
-    if (std::filesystem::exists(family) and std::filesystem::is_regular_file(family)) return family;
+    TTF_FontStyleFlags ttf_font_style = 0;
 
-    FcConfig *cfg = FcInitLoadConfigAndFonts();
-    if (cfg == nullptr) return cart::error { "Failed to initialize fontconfig" }.unexpected();
+    if (auto res = parse_font_style(style); res.has_value())
+        ttf_font_style = *res;
+    else
+        return cart::error { R"(Font style "{}" for "{}" is invalid.)", family, style }
+            .unexpected();
 
-    FcPattern *pattern = FcPatternCreate();
-    FcPatternAddString(pattern, FC_FAMILY, reinterpret_cast<const FcChar8 *>(family.data()));
-    FcPatternAddString(pattern, FC_STYLE, reinterpret_cast<const FcChar8 *>(style.data()));
+    std::filesystem::path font_path;
 
-    std::filesystem::path path;
-    FcResult              res;
-    if (FcPattern *matched = FcFontMatch(cfg, pattern, &res); matched != nullptr)
-    {
-        if (FcChar8 *file_path = nullptr;
-            FcPatternGetString(matched, FC_FILE, 0, &file_path) == FcResultMatch)
-            path = reinterpret_cast<char *>(file_path);
-        else
-            return cart::error { "Font family \"{}\" not found.", family }.unexpected();
-        FcPatternDestroy(matched);
-    }
+    if (auto res = ::get_path(family, style); res.has_value())
+        font_path = std::move(*res);
+    else
+        return res.error().unexpected();
 
-    FcPatternDestroy(pattern);
-    FcFini();
+    if (auto it = font_library.find({ font_path, ttf_font_style, pt }); it != font_library.end())
+        return it->second;
 
-    return path;
-}
-
-
-auto font::load(const std::filesystem::path &font_file, float pt, std::string_view style) noexcept
-    -> result<font>
-{
-    if (auto it = _impl::font_library.find(font_file); it != _impl::font_library.end())
-    {
-        auto &font = it->second;
-        if (font.get_size() != pt)
-            if (auto res = font.set_size(pt); !res) return res.error().unexpected();
-        return font;
-    }
-
-    if (TTF_Font *f = TTF_OpenFont(font_file.c_str(), pt); f != nullptr)
+    if (TTF_Font *f = TTF_OpenFont(font_path.c_str(), pt); f != nullptr)
     {
         TTF_SetFontKerning(f, false);
-        auto &font = _impl::font_library.emplace(font_file, f).first->second;
+
+        font font { f };
         if (auto res = font.set_style(style); !res) return res.error().unexpected();
+
+        font_library.emplace(font.as_key(), font);
         return font;
     }
 
-    return sdl::error { "Failed to open font file \"{}\"", font_file.c_str() }.unexpected();
+    return sdl::error { "Failed to open font file \"{}\"", font_path.c_str() }.unexpected();
+}
+catch (cart::error &e)
+{
+    return std::move(e).unexpected();
 }
 
 
+auto font::get_path() const noexcept -> const std::filesystem::path & { return m_font_path; }
 auto font::get_size() noexcept -> float { return TTF_GetFontSize(get()); }
+auto font::get_style() noexcept -> std::uint32_t { return TTF_GetFontStyle(get()); }
+
 
 auto font::set_size(float pt) noexcept -> result<>
 {
@@ -157,6 +181,9 @@ auto font::set_style(std::string_view style_string) noexcept -> result<>
     return cart::error { "Style string (\"{}\") contains an invalid style.", style_string }
         .unexpected();
 }
+
+
+auto font::as_key() noexcept -> key { return { get_path(), get_style(), get_size() }; }
 
 
 auto font::render_glyph(char32_t glyph, color fg, color bg, glyph_quality quality) noexcept

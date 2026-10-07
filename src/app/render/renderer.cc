@@ -31,7 +31,7 @@ auto renderer::on_frame(const config &config) noexcept -> result<action>
 auto renderer::on_config_changed(const config &config) noexcept -> result<>
 { return mf_load_fonts(config.get_font()); }
 
-
+ 
 auto renderer::mf_load_fonts(const cfg::font &font_config) noexcept -> result<>
 {
     const float size = font_config.get_size();
@@ -45,23 +45,15 @@ auto renderer::mf_load_fonts(const cfg::font &font_config) noexcept -> result<>
 
     for (const auto &[style, method] : methods)
     {
-        std::filesystem::path font_path;
-
         std::string_view family = (font_config.*method)(cfg::font::family);
         std::string_view fstyle = (font_config.*method)(cfg::font::style);
 
-        if (auto res = sdl::font::get_path(family, fstyle); res.has_value())
-            font_path = std::move(*res);
-        else
-            return res.error().unexpected();
-
-        if (auto res = sdl::font::load(font_path, size, fstyle); res.has_value())
+        if (auto res = sdl::font::open(family, fstyle, size); res.has_value())
             m_fonts[std::to_underlying(style)] = std::move(*res);
         else
             return res.error().unexpected();
 
-        spdlog::info(R"(Loaded font "{}" with a style of "{}" from "{}".)", family, fstyle,
-                     font_path.c_str());
+        spdlog::info(R"(Loaded font "{}" with a style of "{}".)", family, fstyle);
     }
 
     return {};

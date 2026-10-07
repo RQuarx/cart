@@ -108,7 +108,7 @@ void row::damage() noexcept
 void row::erase(color bg) noexcept
 {
     cell blank {};
-    blank.color.bg = bg;
+    blank.colors.bg = bg;
     std::ranges::fill(cells, blank);
 
     if (extras != nullptr) extras->clear();
@@ -127,7 +127,7 @@ void row::erase(range range, color bg)
     if (range.begin >= range.end) return;
 
     cell blank {};
-    blank.color.bg = bg;
+    blank.colors.bg = bg;
     std::fill(cells.begin() + range.begin, cells.begin() + range.end, blank);
 
     if (extras != nullptr)
@@ -149,11 +149,13 @@ void row::resize(std::size_t columns)
         cells.resize(columns); /* may throw, before anything else is modified */
     else
     {
+        using enum cell::character::kind;
+
         /* Don't leave half of a wide glyph at the new edge */
-        if (cells[columns].character.is_spacer())
+        if (cells[columns].character.get_kind() == spacer)
         {
             std::size_t c = columns;
-            while (c > 0 and cells[c - 1].character.is_spacer()) c--;
+            while (c > 0 and cells[c - 1].character.get_kind() == spacer) c--;
 
             if (c > 0)
                 for (std::size_t i = c - 1; i < columns; i++) cells[i].character = {};

@@ -11,8 +11,7 @@ auto grid::create(std::size_t rows, std::size_t columns, std::size_t scrollback_
 
 {
     if (rows == 0 or columns == 0)
-        return error { "Invalid size passed (rows: {}, columns: {})", rows, columns }
-            .unexpected();
+        return error { "Invalid size passed (rows: {}, columns: {})", rows, columns }.unexpected();
     return grid { rows, columns, scrollback_limit };
 }
 
@@ -129,8 +128,7 @@ auto grid::resize(std::size_t new_rows, std::size_t new_columns) noexcept -> res
         if (grow > 0)
         {
             delta.pulled = std::min(grow, scrollback_size());
-            for (auto i = delta.pulled; i < grow; ++i)
-                m_lines.emplace_back(m_columns);
+            for (auto i = delta.pulled; i < grow; ++i) m_lines.emplace_back(m_columns);
         }
         else
             delta.pushed = m_screen_rows - new_rows;
@@ -176,14 +174,17 @@ auto grid::resize(std::size_t new_rows, std::size_t new_columns) noexcept -> res
         std::size_t i   = 0;
         while (i < line.size())
         {
-            if (line[i].character.is_spacer())
+            using enum cell::character::kind;
+
+            if (line[i].character.get_kind() == spacer)
             {
                 i++;
                 continue;
             }
 
-            const bool        is_wide = (i + 1 < line.size() and line[i + 1].character.is_spacer());
-            const std::size_t w       = is_wide ? 2UZ : 1UZ;
+            const bool is_wide
+                = (i + 1 < line.size() and line[i + 1].character.get_kind() == spacer);
+            const std::size_t w = is_wide ? 2UZ : 1UZ;
 
             if (new_columns == 1 and is_wide)
             {
@@ -195,8 +196,8 @@ auto grid::resize(std::size_t new_rows, std::size_t new_columns) noexcept -> res
                     pos = 0;
                 }
                 out.cells[pos] = line[i];
-                pos += 1;
-                i += 2;
+                pos           += 1;
+                i             += 2;
                 continue;
             }
 
@@ -213,13 +214,13 @@ auto grid::resize(std::size_t new_rows, std::size_t new_columns) noexcept -> res
             if (is_wide)
             {
                 out.cells[pos + 1] = line[i + 1];
-                pos += 2;
-                i += 2;
+                pos               += 2;
+                i                 += 2;
             }
             else
             {
                 pos += 1;
-                i += 1;
+                i   += 1;
             }
         }
         reflowed.emplace_back(std::move(out));
@@ -236,14 +237,14 @@ auto grid::resize(std::size_t new_rows, std::size_t new_columns) noexcept -> res
     while (m_lines.size() < new_rows) m_lines.emplace_back(new_columns);
 
     m_screen_rows = new_rows;
-    m_columns    = new_columns;
+    m_columns     = new_columns;
     m_view_offset = 0;
     trim_scrollback();
 
     for (std::size_t j = 0; j < m_screen_rows; ++j) row_at(j).damage();
 
     resize_delta delta {};
-    const auto  new_scrollback = scrollback_size();
+    const auto   new_scrollback = scrollback_size();
     if (new_scrollback >= old_scrollback)
         delta.pushed = new_scrollback - old_scrollback;
     else

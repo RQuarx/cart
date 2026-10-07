@@ -41,7 +41,10 @@ namespace cart::trait
     template <typename P, auto D>
     struct deleter
     {
-        void operator()(P ptr) const noexcept { D(ptr); }
+        void operator()(P ptr) const noexcept
+        {
+            if (ptr != nullptr) D(ptr);
+        }
     };
 
 

@@ -28,16 +28,16 @@ namespace cart::term
             };
 
             std::uint8_t width = 0;
-        } attribute;
+        };
 
 
         /**
          * A cell's content, packed into 32 bits.
          *
-         * - [ 0x00000000 ... 0x0010FFFF ]: plain unicode code point (0 = empty)
-         * - [ 0x00200000 ... 0x4010FFFF ]: index into a side table of composed characters
-         *                                  (base + combining marks, grapheme clusters)
-         * - 0x40100000: spacer (trailing half of a wide glyph)
+         * - 0x00000000 - 0x0010FFFF  codepoint
+         * - 0x00110000 - 0x001FFFFF  unused
+         * - 0x00200000 - 0x401FFFFF  composed
+         * - 0x40200000 - 0xFFFFFFFF  spacer
          */
         class character
         {
@@ -54,7 +54,7 @@ namespace cart::term
 
 
             [[nodiscard]]
-            static constexpr auto make_codepoint(char32_t cp) noexcept -> character
+            static constexpr auto codepoint(char32_t cp) noexcept -> character
             {
                 /* anything above the unicode range would collide with the
                    composed range, so substitute U+FFFD. */
@@ -64,11 +64,11 @@ namespace cart::term
 
             /** index must be <= max_composed_index */
             [[nodiscard]]
-            static constexpr auto make_composed(std::uint32_t index) noexcept -> character
+            static constexpr auto composed(std::uint32_t index) noexcept -> character
             { return { character::composed_lo + (index & character::max_composed_index) }; }
 
             [[nodiscard]]
-            static constexpr auto make_spacer(std::uint32_t remaining = 0) noexcept -> character
+            static constexpr auto spacer(std::uint32_t remaining = 0) noexcept -> character
             { return { character::spacer_base + remaining }; }
 
 
@@ -79,18 +79,6 @@ namespace cart::term
                 if (m_value >= spacer_base) return kind::spacer;
                 return kind::composed;
             }
-
-            [[nodiscard]]
-            constexpr auto is_codepoint() const noexcept -> bool
-            { return get_kind() == kind::codepoint; }
-
-            [[nodiscard]]
-            constexpr auto is_composed() const noexcept -> bool
-            { return get_kind() == kind::composed; }
-
-            [[nodiscard]]
-            constexpr auto is_spacer() const noexcept -> bool
-            { return get_kind() == kind::spacer; }
 
             [[nodiscard]]
             constexpr auto is_empty() const noexcept -> bool
@@ -132,23 +120,28 @@ namespace cart::term
             static constexpr std::uint32_t composed_hi        = composed_lo + max_composed_index;
 
             static constexpr std::uint32_t spacer_base = composed_hi + 1;
-        } character = character::make_codepoint(U' ');
+        };
 
 
-        struct color
+        struct colors
         {
             term::color bg = term::color::make_default_bg();
             term::color fg = term::color::make_default_fg();
 
 
             [[nodiscard]]
-            constexpr auto inverse() const noexcept -> color
+            constexpr auto inverse() const noexcept -> colors
             {
-                color c = *this;
+                colors c = *this;
                 std::swap(c.bg, c.fg);
                 return c;
             }
-        } color;
+        };
+
+
+        character character = character::codepoint(U' ');
+        attribute attribute;
+        colors    colors;
 
         /* 2 bytes leftover... extra attributes or stuff can be added */
     };

@@ -4,6 +4,7 @@ using cart::sdl::window;
 
 
 auto window::create(const char *title, int w, int h) noexcept -> result<std::pair<window, renderer>>
+try
 {
     pointer           wind;
     renderer::pointer rend;
@@ -15,6 +16,10 @@ auto window::create(const char *title, int w, int h) noexcept -> result<std::pai
     SDL_SetRenderVSync(rend, 1);
 
     return std::pair { window { wind }, renderer { rend } };
+}
+catch (error &e)
+{
+    return std::move(e).unexpected();
 }
 
 

@@ -1,15 +1,16 @@
 #pragma once
-#include "sdl/object.hh"
 #include "sdl/renderer.hh"
+#include "sdl/runtime_guard.hh"
 #include "shared/traits.hh"
 
 
 namespace cart::sdl
 {
-    class window final : object<>, public trait::uptr<SDL_Window, SDL_DestroyWindow>
+    class window final : runtime_guard<>,
+                         public trait::unique_handle_of<SDL_Window, SDL_DestroyWindow>
     {
     public:
-        using uptr::uptr;
+        using unique_handle_of::unique_handle_of;
 
         [[nodiscard]]
         static auto create(const char *title, int w, int h) noexcept

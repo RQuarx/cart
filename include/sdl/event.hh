@@ -3,7 +3,7 @@
 
 #include <SDL3/SDL_events.h>
 
-#include "sdl/object.hh"
+#include "sdl/runtime_guard.hh"
 
 
 namespace cart::sdl
@@ -75,7 +75,7 @@ namespace cart::sdl
     };
 
 
-    class event_pump final : object<>
+    class event_pump final : runtime_guard<>
     {
     public:
         /** @return The next pending event, or nullopt if the queue is empty. Never blocks. */

@@ -1,15 +1,15 @@
 #pragma once
-#include "sdl/object.hh"
+#include "sdl/runtime_guard.hh"
 #include "sdl/types.hh"
 #include "shared/traits.hh"
 
 
 namespace cart::sdl
 {
-    class surface final : object<>, public trait::uptr<SDL_Surface, SDL_DestroySurface>
+    class surface final : runtime_guard<>, public trait::unique_handle_of<SDL_Surface, SDL_DestroySurface>
     {
     public:
-        using uptr::uptr;
+        using unique_handle_of::unique_handle_of;
 
 
         [[nodiscard]]

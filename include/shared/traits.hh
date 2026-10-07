@@ -1,6 +1,9 @@
 #pragma once
 #include <concepts>
 #include <memory>
+#include <mutex>
+
+#include "shared/result.hh"
 
 
 namespace cart::trait
@@ -36,27 +39,23 @@ namespace cart::trait
 
 
     template <typename P, auto D>
-    struct deleter_type
+    struct deleter
     {
-        void operator()(P ptr) const noexcept
-        {
-            D(ptr);
-            ptr = nullptr;
-        }
+        void operator()(P ptr) const noexcept { D(ptr); }
     };
 
 
     template <typename T, auto D>
-    class uptr
+    class unique_handle_of
     {
     public:
         using value_type    = T;
         using pointer       = value_type *;
         using const_pointer = const value_type *;
-        using deleter_type  = deleter_type<pointer, D>;
+        using deleter_type  = deleter<pointer, D>;
 
 
-        constexpr uptr(pointer p = pointer()) noexcept : m_ptr { p } {}
+        constexpr unique_handle_of(pointer p = pointer()) noexcept : m_ptr { p } {}
 
 
         [[nodiscard]]
@@ -77,16 +76,16 @@ namespace cart::trait
 
 
     template <typename T, auto D>
-    class sptr
+    class shared_handle_of
     {
     public:
         using value_type    = T;
         using pointer       = value_type *;
         using const_pointer = const value_type *;
-        using deleter_type  = deleter_type<pointer, D>;
+        using deleter_type  = deleter<pointer, D>;
 
 
-        constexpr sptr(pointer p = pointer()) noexcept : m_ptr { p, deleter_type {} } {}
+        constexpr shared_handle_of(pointer p = pointer()) noexcept : m_ptr { p, deleter_type {} } {}
 
 
         [[nodiscard]]
@@ -103,5 +102,59 @@ namespace cart::trait
 
     private:
         std::shared_ptr<value_type> m_ptr;
+    };
+
+
+    template <typename T>
+    concept runtime_policy = requires {
+        { T::init() } -> std::same_as<result<>>;
+        { T::deinit() };
+    };
+
+
+    template <runtime_policy Policy>
+    class runtime_guard
+    {
+    protected:
+        runtime_guard()
+        {
+            if (auto res = m_state.acquire(); !res) throw res.error();
+        }
+
+        ~runtime_guard() { m_state.release(); }
+
+        runtime_guard(const runtime_guard & /* unused */) : runtime_guard() {}
+        runtime_guard(runtime_guard && /* unused */) noexcept : runtime_guard() {}
+        auto operator=(const runtime_guard &) -> runtime_guard & = default;
+        auto operator=(runtime_guard &&) -> runtime_guard &      = default;
+
+    private:
+        inline static class
+        {
+        public:
+            [[nodiscard]]
+            auto acquire() noexcept -> result<>
+            {
+                std::scoped_lock lock { m_mtx };
+                if (m_count++ == 0)
+                    if (auto res = Policy::init(); !res)
+                    {
+                        m_count--;
+                        return res;
+                    }
+                return {};
+            }
+
+
+            void release() noexcept
+            {
+                std::scoped_lock lock { m_mtx };
+                if (--m_count == 0) Policy::deinit();
+            }
+
+        private:
+            std::mutex  m_mtx;
+            std::size_t m_count = 0;
+        } m_state;
     };
 }

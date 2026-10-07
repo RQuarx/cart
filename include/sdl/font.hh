@@ -3,20 +3,19 @@
 #include <string>
 #include <unordered_map>
 
-#include "sdl/object.hh"
-#include "shared/traits.hh"
-
+#include "sdl/runtime_guard.hh"
 #include "sdl/surface.hh"
 #include "sdl/types.hh"
 #include "shared/hash.hh"
+#include "shared/traits.hh"
 
 
 namespace cart::sdl
 {
-    class font final : object<>, public trait::sptr<TTF_Font, TTF_CloseFont>
+    class font final : runtime_guard<>, public trait::shared_handle_of<TTF_Font, TTF_CloseFont>
     {
     public:
-        using sptr::sptr;
+        using shared_handle_of::shared_handle_of;
 
 
         struct metrics

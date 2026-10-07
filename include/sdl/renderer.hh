@@ -1,7 +1,7 @@
 #pragma once
 #include <SDL3/SDL_render.h>
 
-#include "sdl/object.hh"
+#include "sdl/runtime_guard.hh"
 #include "sdl/surface.hh"
 #include "sdl/texture.hh"
 #include "sdl/types.hh"
@@ -10,10 +10,11 @@
 
 namespace cart::sdl
 {
-    class renderer final : object<>, public trait::sptr<SDL_Renderer, SDL_DestroyRenderer>
+    class renderer final : runtime_guard<>,
+                           public trait::shared_handle_of<SDL_Renderer, SDL_DestroyRenderer>
     {
     public:
-        using sptr::sptr;
+        using shared_handle_of::shared_handle_of;
 
 
         auto set_draw_color(color color) noexcept -> result<>;

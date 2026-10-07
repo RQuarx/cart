@@ -1,14 +1,16 @@
 #pragma once
 #include "sdl/object.hh"
-#include "sdl/pointer.hh"
 #include "sdl/renderer.hh"
+#include "shared/traits.hh"
 
 
 namespace cart::sdl
 {
-    class window final : object<>, public uptr<SDL_Window, SDL_DestroyWindow>
+    class window final : object<>, public trait::uptr<SDL_Window, SDL_DestroyWindow>
     {
     public:
+        using uptr::uptr;
+
         [[nodiscard]]
         static auto create(const char *title, int w, int h) noexcept
             -> result<std::pair<window, renderer>>;
@@ -27,8 +29,5 @@ namespace cart::sdl
 
         auto start_text_input() noexcept -> result<>;
         auto stop_text_input() noexcept -> result<>;
-
-    private:
-        constexpr window(pointer window) noexcept : uptr { window } {}
     };
 }

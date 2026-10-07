@@ -1,7 +1,9 @@
 #include <algorithm>
+#include <utility>
 
 #include <fontconfig/fontconfig.h>
 
+#include "sdl/error.hh"
 #include "sdl/font.hh"
 
 using cart::sdl::font;
@@ -53,7 +55,7 @@ auto font::get_path(std::string_view family, std::string_view style) noexcept
     if (std::filesystem::exists(family) and std::filesystem::is_regular_file(family)) return family;
 
     FcConfig *cfg = FcInitLoadConfigAndFonts();
-    if (cfg == nullptr) return error { "Failed to initialize fontconfig" }.unexpected();
+    if (cfg == nullptr) return cart::error { "Failed to initialize fontconfig" }.unexpected();
 
     FcPattern *pattern = FcPatternCreate();
     FcPatternAddString(pattern, FC_FAMILY, reinterpret_cast<const FcChar8 *>(family.data()));
@@ -67,7 +69,7 @@ auto font::get_path(std::string_view family, std::string_view style) noexcept
             FcPatternGetString(matched, FC_FILE, 0, &file_path) == FcResultMatch)
             path = reinterpret_cast<char *>(file_path);
         else
-            return error { "Font family \"{}\" not found.", family }.unexpected();
+            return cart::error { "Font family \"{}\" not found.", family }.unexpected();
         FcPatternDestroy(matched);
     }
 
@@ -97,23 +99,22 @@ auto font::load(const std::filesystem::path &font_file, float pt, std::string_vi
         return font;
     }
 
-    return error { "Failed to open font file \"{}\": {}", font_file.c_str(), SDL_GetError() }
-        .unexpected();
+    return sdl::error { "Failed to open font file \"{}\"", font_file.c_str() }.unexpected();
 }
 
 
 auto font::get_size() noexcept -> float { return TTF_GetFontSize(get()); }
+
 auto font::set_size(float pt) noexcept -> result<>
 {
-    if (!TTF_SetFontSize(get(), pt))
-        return error { "Failed to set font size: {}", SDL_GetError() }.unexpected();
+    if (!TTF_SetFontSize(get(), pt)) return sdl::error { "Failed to set font size" }.unexpected();
     return {};
 }
 
 auto font::set_size(float pt, int horizontal_dpi, int vertical_dpi) noexcept -> result<>
 {
     if (!TTF_SetFontSizeDPI(get(), pt, horizontal_dpi, vertical_dpi))
-        return error { "Failed to set font size: {}", SDL_GetError() }.unexpected();
+        return sdl::error { "Failed to set font size" }.unexpected();
     return {};
 }
 
@@ -122,7 +123,7 @@ auto font::get_glyph_metrics(std::uint32_t character) -> metrics
 {
     metrics m;
     if (!TTF_GetGlyphMetrics(get(), character, &m.x.min, &m.x.max, &m.y.min, &m.y.max, &m.advance))
-        throw error { "Failed to get glyph metrics for '{}': {}", character, SDL_GetError() };
+        throw sdl::error { "Failed to get glyph metrics for '{}'", character };
     return m;
 }
 
@@ -131,13 +132,14 @@ auto font::get_ascent() noexcept -> int { return TTF_GetFontAscent(get()); }
 auto font::get_descent() noexcept -> int { return TTF_GetFontDescent(get()); }
 auto font::get_height() noexcept -> int { return TTF_GetFontHeight(get()); }
 auto font::get_line_skip() noexcept -> int { return TTF_GetFontLineSkip(get()); }
-auto font::get_string_size(const std::string &string) -> std::pair<int, int>
+auto font::get_string_size(const std::string &string) -> size
 {
-    std::pair<int, int> res;
+    int w = 0;
+    int h = 0;
 
-    if (!TTF_GetStringSize(get(), string.c_str(), string.size(), &res.first, &res.second))
-        throw error { "Failed to get the size of string \"{}\": {}", string, SDL_GetError() };
-    return res;
+    if (!TTF_GetStringSize(get(), string.c_str(), string.size(), &w, &h))
+        throw sdl::error { "Failed to get the size of string \"{}\"", string };
+    return { static_cast<float>(w), static_cast<float>(h) };
 }
 
 
@@ -152,5 +154,49 @@ auto font::set_style(std::string_view style_string) noexcept -> result<>
         return {};
     }
 
-    return error { "Style string (\"{}\") contains an invalid style.", style_string }.unexpected();
+    return cart::error { "Style string (\"{}\") contains an invalid style.", style_string }
+        .unexpected();
+}
+
+
+auto font::render_glyph(char32_t glyph, color fg, color bg, glyph_quality quality) noexcept
+    -> result<surface>
+{
+    switch (quality)
+    {
+    case glyph_quality::shaded:
+        {
+            surface::pointer res
+                = TTF_RenderGlyph_Shaded(get(), glyph, fg.to_color(), bg.to_color());
+
+            if (res == nullptr) return sdl::error { "Failed to render shaded glyph" }.unexpected();
+            return surface { res };
+        }
+
+    case glyph_quality::solid:
+        {
+            surface::pointer res = TTF_RenderGlyph_Solid(get(), glyph, fg.to_color());
+
+            if (res == nullptr) return sdl::error { "Failed to render solid glyph" }.unexpected();
+            return surface { res };
+        }
+
+    case glyph_quality::blended:
+        {
+            surface::pointer res = TTF_RenderGlyph_Blended(get(), glyph, fg.to_color());
+
+            if (res == nullptr) return sdl::error { "Failed to render blended glyph" }.unexpected();
+            return surface { res };
+        }
+
+    case glyph_quality::lcd:
+        {
+            surface::pointer res = TTF_RenderGlyph_LCD(get(), glyph, fg.to_color(), bg.to_color());
+
+            if (res == nullptr) return sdl::error { "Failed to render LCD glyph" }.unexpected();
+            return surface { res };
+        }
+    }
+
+    std::unreachable();
 }

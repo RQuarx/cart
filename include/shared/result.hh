@@ -38,22 +38,26 @@ namespace cart
     class error : public std::runtime_error
     {
     public:
-        template <std::derived_from<error> E, typename... Args>
-        static constexpr auto create(Args &&...args) noexcept -> std::unexpected<E>
-        { return E { std::forward<Args>(args)... }.unexpected(); }
-
-
         template <typename... Args>
         error(_impl::format_string<Args...> fmt, Args &&...args)
             : std::runtime_error { std::format(fmt.fmt, std::forward<Args>(args)...) },
-              source { fmt.source }
+              m_source { fmt.source }
         {
         }
 
 
-        [[nodiscard]]
-        constexpr auto where() const noexcept -> std::source_location
-        { return this->source; }
+        template <typename... Args>
+        error(const std::source_location &source,
+              std::format_string<Args...> fmt,
+              Args &&...args) noexcept
+            : std::runtime_error { std::format(fmt, std::forward<Args>(args)...) },
+              m_source { source }
+        {
+        }
+
+
+        [[nodiscard]] constexpr auto where() const noexcept -> std::source_location
+        { return this->m_source; }
 
 
         template <typename T>
@@ -61,19 +65,20 @@ namespace cart
         auto unexpected(this T &&self) noexcept -> std::unexpected<std::remove_cvref_t<T>>
         { return std::unexpected { std::forward<T>(self) }; }
 
+
         template <typename T>
         [[nodiscard]]
         auto format(this const T &self) -> std::string
         {
             if constexpr (std::is_same_v<T, error>)
-                return std::format("[{}:{}:{}]({})", self.source.file_name(), self.source.line(),
-                                   self.source.column(), self.what());
+                return std::format("[{}:{}:{}]: {}", self.m_source.file_name(),
+                                   self.m_source.line(), self.m_source.column(), self.what());
             else
                 return self.format();
         }
 
     private:
-        std::source_location source;
+        std::source_location m_source;
     };
 
 

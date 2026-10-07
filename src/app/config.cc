@@ -26,9 +26,14 @@ struct std::formatter<toml::source_position>
 class config_error : public cart::error
 {
 public:
-    config_error(const toml::parse_error &err)
-        : cart::error { "Failed to parse config file {}:[{}]-[{}]: {}", *err.source().path,
-                        err.source().begin, err.source().end, err.description() }
+    config_error(const toml::parse_error    &err,
+                 const std::source_location &source = std::source_location::current())
+        : cart::error { source,
+                        "Failed to parse config file {}:[{}]-[{}]: {}",
+                        *err.source().path,
+                        err.source().begin,
+                        err.source().end,
+                        err.description() }
     {
     }
 
@@ -37,6 +42,7 @@ public:
                  cart::_impl::format_string<Args...> fmt,
                  Args and...args)
         : cart::error {
+              fmt.source,
               "Error [{}:{}]: {}",
               *region.path,
               region.begin,

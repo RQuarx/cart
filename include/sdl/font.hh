@@ -4,15 +4,21 @@
 #include <unordered_map>
 
 #include "sdl/object.hh"
-#include "sdl/pointer.hh"
+#include "shared/traits.hh"
+
+#include "sdl/surface.hh"
+#include "sdl/types.hh"
 #include "shared/hash.hh"
 
 
 namespace cart::sdl
 {
-    class font final : object<>, public sptr<TTF_Font, TTF_CloseFont>
+    class font final : object<>, public trait::sptr<TTF_Font, TTF_CloseFont>
     {
     public:
+        using sptr::sptr;
+
+
         struct metrics
         {
             struct
@@ -31,6 +37,15 @@ namespace cart::sdl
         };
 
 
+        enum class glyph_quality : std::uint8_t
+        {
+            shaded,
+            blended,
+            solid,
+            lcd,
+        };
+
+
         [[nodiscard]]
         static auto get_path(std::string_view family, std::string_view style) noexcept
             -> result<std::filesystem::path>;
@@ -40,25 +55,25 @@ namespace cart::sdl
                          float                        pt,
                          std::string_view             style) noexcept -> result<font>;
 
-        constexpr font(pointer ptr) noexcept : sptr { ptr } {}
-        font() = default;
-
 
         [[nodiscard]] auto get_size() noexcept -> float;
-        auto               set_size(float pt) noexcept -> result<>;
-        auto set_size(float pt, int horizontal_dpi, int vertical_dpi) noexcept -> result<>;
-
         [[nodiscard]] auto get_glyph_metrics(std::uint32_t character) -> metrics;
         [[nodiscard]] auto get_ascent() noexcept -> int;
         [[nodiscard]] auto get_descent() noexcept -> int;
         [[nodiscard]] auto get_height() noexcept -> int;
         [[nodiscard]] auto get_line_skip() noexcept -> int;
-
-        /** @return A pair containing the width, and height. */
-        [[nodiscard]] auto get_string_size(const std::string &string) -> std::pair<int, int>;
+        [[nodiscard]] auto get_string_size(const std::string &string) -> size;
         [[nodiscard]] auto is_monospace() noexcept -> bool;
 
+        auto set_size(float pt) noexcept -> result<>;
+        auto set_size(float pt, int horizontal_dpi, int vertical_dpi) noexcept -> result<>;
         auto set_style(std::string_view style_string) noexcept -> result<>;
+
+        auto render_glyph(char32_t      glyph,
+                          color         fg,
+                          color         bg,
+                          glyph_quality quality = glyph_quality::blended) noexcept
+            -> result<surface>;
     };
 
 

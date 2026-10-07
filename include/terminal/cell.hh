@@ -26,6 +26,8 @@ namespace cart::term
                 confined = 1 << 10,
                 url      = 1 << 11,
             };
+
+            std::uint8_t width = 0;
         } attribute;
 
 
@@ -130,7 +132,7 @@ namespace cart::term
             static constexpr std::uint32_t composed_hi        = composed_lo + max_composed_index;
 
             static constexpr std::uint32_t spacer_base = composed_hi + 1;
-        } character;
+        } character = character::make_codepoint(U' ');
 
 
         struct color

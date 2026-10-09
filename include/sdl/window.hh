@@ -22,11 +22,11 @@ namespace cart::sdl
         { return self.m_renderer; }
 
 
-        [[nodiscard]] auto get_id() noexcept -> std::uint64_t;
-        [[nodiscard]] auto get_size() -> std::pair<int, int>;
-        [[nodiscard]] auto get_size_in_pixels() -> std::pair<int, int>;
-        [[nodiscard]] auto get_display_scale() noexcept -> float;
-        [[nodiscard]] auto get_pixel_density() noexcept -> float;
+        [[nodiscard]] auto get_id() const noexcept -> std::uint64_t;
+        [[nodiscard]] auto get_size() const noexcept -> result<size>;
+        [[nodiscard]] auto get_size_in_pixels() const noexcept -> result<size>;
+        [[nodiscard]] auto get_display_scale() const noexcept -> float;
+        [[nodiscard]] auto get_pixel_density() const noexcept -> float;
 
         auto start_text_input() noexcept -> result<>;
         auto stop_text_input() noexcept -> result<>;

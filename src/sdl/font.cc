@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <unordered_map>
 #include <utility>
 
 #include <fontconfig/fontconfig.h>
@@ -125,8 +126,8 @@ catch (cart::error &e)
 
 
 auto font::get_path() const noexcept -> const std::filesystem::path & { return m_font_path; }
-auto font::get_size() noexcept -> float { return TTF_GetFontSize(get()); }
-auto font::get_style() noexcept -> std::uint32_t { return TTF_GetFontStyle(get()); }
+auto font::get_size() const noexcept -> float { return TTF_GetFontSize(get()); }
+auto font::get_style() const noexcept -> std::uint32_t { return TTF_GetFontStyle(get()); }
 
 
 auto font::set_size(float pt) noexcept -> result<>
@@ -143,31 +144,31 @@ auto font::set_size(float pt, int horizontal_dpi, int vertical_dpi) noexcept -> 
 }
 
 
-auto font::get_glyph_metrics(std::uint32_t character) -> metrics
+auto font::get_glyph_metrics(std::uint32_t character) const noexcept -> result<metrics>
 {
     metrics m;
     if (!TTF_GetGlyphMetrics(get(), character, &m.x.min, &m.x.max, &m.y.min, &m.y.max, &m.advance))
-        throw sdl::error { "Failed to get glyph metrics for '{}'", character };
+        return sdl::error { "Failed to get glyph metrics for '{}'", character }.unexpected();
     return m;
 }
 
 
-auto font::get_ascent() noexcept -> int { return TTF_GetFontAscent(get()); }
-auto font::get_descent() noexcept -> int { return TTF_GetFontDescent(get()); }
-auto font::get_height() noexcept -> int { return TTF_GetFontHeight(get()); }
-auto font::get_line_skip() noexcept -> int { return TTF_GetFontLineSkip(get()); }
-auto font::get_string_size(const std::string &string) -> size
+auto font::get_ascent() const noexcept -> int { return TTF_GetFontAscent(get()); }
+auto font::get_descent() const noexcept -> int { return TTF_GetFontDescent(get()); }
+auto font::get_height() const noexcept -> int { return TTF_GetFontHeight(get()); }
+auto font::get_line_skip() const noexcept -> int { return TTF_GetFontLineSkip(get()); }
+auto font::get_string_size(const std::string &string) const noexcept -> result<size>
 {
     int w = 0;
     int h = 0;
 
     if (!TTF_GetStringSize(get(), string.c_str(), string.size(), &w, &h))
-        throw sdl::error { "Failed to get the size of string \"{}\"", string };
-    return { static_cast<float>(w), static_cast<float>(h) };
+        return sdl::error { "Failed to get the size of string \"{}\"", string }.unexpected();
+    return size { static_cast<float>(w), static_cast<float>(h) };
 }
 
 
-auto font::is_monospace() noexcept -> bool { return TTF_FontIsFixedWidth(get()); }
+auto font::is_monospace() const noexcept -> bool { return TTF_FontIsFixedWidth(get()); }
 
 
 auto font::set_style(std::string_view style_string) noexcept -> result<>
@@ -183,15 +184,15 @@ auto font::set_style(std::string_view style_string) noexcept -> result<>
 }
 
 
-auto font::as_key() noexcept -> key { return { get_path(), get_style(), get_size() }; }
+auto font::as_key() const noexcept -> key { return { get_path(), get_style(), get_size() }; }
 
 
-auto font::render_glyph(char32_t glyph, color fg, color bg, glyph_quality quality) noexcept
+auto font::render_glyph(char32_t glyph, color fg, color bg, render_type type) noexcept
     -> result<surface>
 {
-    switch (quality)
+    switch (type)
     {
-    case glyph_quality::shaded:
+    case render_type::shaded:
         {
             surface::pointer res
                 = TTF_RenderGlyph_Shaded(get(), glyph, fg.to_color(), bg.to_color());
@@ -200,7 +201,7 @@ auto font::render_glyph(char32_t glyph, color fg, color bg, glyph_quality qualit
             return surface { res };
         }
 
-    case glyph_quality::solid:
+    case render_type::solid:
         {
             surface::pointer res = TTF_RenderGlyph_Solid(get(), glyph, fg.to_color());
 
@@ -208,7 +209,7 @@ auto font::render_glyph(char32_t glyph, color fg, color bg, glyph_quality qualit
             return surface { res };
         }
 
-    case glyph_quality::blended:
+    case render_type::blended:
         {
             surface::pointer res = TTF_RenderGlyph_Blended(get(), glyph, fg.to_color());
 
@@ -216,11 +217,57 @@ auto font::render_glyph(char32_t glyph, color fg, color bg, glyph_quality qualit
             return surface { res };
         }
 
-    case glyph_quality::lcd:
+    case render_type::lcd:
         {
             surface::pointer res = TTF_RenderGlyph_LCD(get(), glyph, fg.to_color(), bg.to_color());
 
             if (res == nullptr) return sdl::error { "Failed to render LCD glyph" }.unexpected();
+            return surface { res };
+        }
+    }
+
+    std::unreachable();
+}
+
+
+auto font::render_text(std::string_view text, color fg, color bg, render_type type) noexcept
+    -> result<surface>
+{
+    switch (type)
+    {
+    case render_type::shaded:
+        {
+            surface::pointer res = TTF_RenderText_Shaded(get(), text.data(), text.length(),
+                                                         fg.to_color(), bg.to_color());
+
+            if (res == nullptr) return sdl::error { "Failed to render shaded text" }.unexpected();
+            return surface { res };
+        }
+
+    case render_type::solid:
+        {
+            surface::pointer res
+                = TTF_RenderText_Solid(get(), text.data(), text.length(), fg.to_color());
+
+            if (res == nullptr) return sdl::error { "Failed to render solid text" }.unexpected();
+            return surface { res };
+        }
+
+    case render_type::blended:
+        {
+            surface::pointer res
+                = TTF_RenderText_Blended(get(), text.data(), text.length(), fg.to_color());
+
+            if (res == nullptr) return sdl::error { "Failed to render blended text" }.unexpected();
+            return surface { res };
+        }
+
+    case render_type::lcd:
+        {
+            surface::pointer res = TTF_RenderText_LCD(get(), text.data(), text.length(),
+                                                      fg.to_color(), bg.to_color());
+
+            if (res == nullptr) return sdl::error { "Failed to render LCD text" }.unexpected();
             return surface { res };
         }
     }

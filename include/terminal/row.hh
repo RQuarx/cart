@@ -43,7 +43,7 @@ namespace cart::term
         };
 
 
-        class attribute final : public trait::attribute<std::uint8_t>
+        class attributes final : public trait::attribute<std::uint8_t>
         {
         public:
             enum flag : std::uint8_t
@@ -55,12 +55,12 @@ namespace cart::term
 
             static constexpr auto unset = std::numeric_limits<std::uint32_t>::max();
 
-            range prompt_range { attribute::unset, attribute::unset };
+            range prompt_range { attributes::unset, attributes::unset };
         };
 
 
         std::vector<cell>       cells;
-        attribute               attribute;
+        attributes               attribute;
         std::unique_ptr<extras> extras;
 
 
@@ -87,5 +87,10 @@ namespace cart::term
         void put_underline(range range, color color, underline_style style);
         void erase_uris(range range);
         void erase_underlines(range range);
+
+
+        /** @return A range of cells that has a specified attribute. */
+        [[nodiscard]]
+        auto attribute_range(cell::attributes::flag flag) noexcept -> std::optional<range>;
     };
 }

@@ -21,7 +21,8 @@ namespace cart::sdl
         auto clear(color clear_color) noexcept -> result<>;
         auto present() noexcept -> result<>;
 
+        [[nodiscard]] auto create_texture(surface &surface) noexcept -> result<texture>;
+
         auto render_texture(texture &texture, rect dst) noexcept -> result<>;
-        auto render_surface(surface &surface, rect dst) noexcept -> result<>;
     };
 }

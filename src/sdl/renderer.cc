@@ -38,13 +38,9 @@ auto renderer::render_texture(texture &texture, rect dst) noexcept -> result<>
 }
 
 
-auto renderer::render_surface(surface &surface, rect dst) noexcept -> result<>
+auto renderer::create_texture(surface &surface) noexcept -> result<texture>
 {
-    texture text;
-
     if (texture::pointer ptr = SDL_CreateTextureFromSurface(get(), surface.get()); ptr != nullptr)
-        text = ptr;
-    else
-        return sdl::error { "Failed to create texture from surface" }.unexpected();
-    return render_texture(text, dst);
+        return texture { ptr };
+    return sdl::error { "Failed to create texture from surface" }.unexpected();
 }

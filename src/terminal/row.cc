@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <ranges>
 
 #include "terminal/row.hh"
 
@@ -9,8 +10,7 @@ namespace
 {
     /**
      * @brief Remove a range from a sorted, non-overlapping range list.
-     *
-     * A range that strictly contains the hole is split into two.
+     * @note A range that strictly contains the hole is split into two.
      */
     template <typename T>
     void erase_in(std::vector<T> &v, row::range range)
@@ -100,8 +100,8 @@ void row::extras::clear()
 
 void row::damage() noexcept
 {
-    for (auto &c : cells) c.attribute.set(cell::attribute::clean, false);
-    this->attribute.set(attribute::clean, false);
+    for (auto &c : cells) c.attribute.set(cell::attributes::clean, false);
+    this->attribute.set(attributes::clean, false);
 }
 
 
@@ -113,11 +113,11 @@ void row::erase(color bg) noexcept
 
     if (extras != nullptr) extras->clear();
 
-    attribute.set(attribute::wrapped, false);
-    attribute.set(attribute::clean, false);
-    attribute.set(attribute::prompt_row, false);
+    attribute.set(attributes::wrapped, false);
+    attribute.set(attributes::clean, false);
+    attribute.set(attributes::prompt_row, false);
 
-    attribute.prompt_range = { attribute::unset, attribute::unset };
+    attribute.prompt_range = { attributes::unset, attributes::unset };
 }
 
 
@@ -136,7 +136,7 @@ void row::erase(range range, color bg)
         erase_in(extras->underlines, range);
     }
 
-    attribute.set(attribute::clean, false);
+    attribute.set(attributes::clean, false);
 }
 
 
@@ -152,13 +152,13 @@ void row::resize(std::size_t columns)
         using enum cell::character::kind;
 
         /* Don't leave half of a wide glyph at the new edge */
-        if (cells[columns].character.get_kind() == spacer)
+        if (cells[columns].content.kind() == spacer)
         {
             std::size_t c = columns;
-            while (c > 0 and cells[c - 1].character.get_kind() == spacer) c--;
+            while (c > 0 and cells[c - 1].content.kind() == spacer) c--;
 
             if (c > 0)
-                for (std::size_t i = c - 1; i < columns; i++) cells[i].character = {};
+                for (std::size_t i = c - 1; i < columns; i++) cells[i].content = {};
         }
 
         cells.resize(columns);
@@ -173,9 +173,9 @@ void row::resize(std::size_t columns)
             erase_in(extras->underlines, r);
         }
 
-        if (attribute.prompt_range.begin != attribute::unset)
+        if (attribute.prompt_range.begin != attributes::unset)
             attribute.prompt_range.begin = std::min(attribute.prompt_range.begin, cut);
-        if (attribute.prompt_range.end != attribute::unset)
+        if (attribute.prompt_range.end != attributes::unset)
             attribute.prompt_range.end = std::min(attribute.prompt_range.end, cut);
     }
 
@@ -223,4 +223,28 @@ void row::erase_underlines(range range) /* NOLINT */
 {
     if (extras != nullptr)
         erase_in(extras->underlines, { range.begin, std::min(range.end, range::to_end) });
+}
+
+
+auto row::attribute_range(cell::attributes::flag flag) noexcept -> std::optional<range>
+{
+    std::uint32_t start = range::to_end;
+    std::uint32_t end   = 0;
+
+    for (const auto &[i, cell] : std::views::enumerate(cells))
+    {
+        if (cell.attribute.has(flag))
+        {
+            if (start == range::to_end)
+                start = i;
+            else
+                end = i;
+
+            continue;
+        }
+
+        if (start != range::to_end) return range { start, end + 1 };
+    }
+
+    return std::nullopt;
 }

@@ -109,8 +109,8 @@ auto grid::scroll_down(scroll_region r, std::size_t n) noexcept -> result<>
 namespace
 {
     [[nodiscard]]
-    constexpr auto is_empty_cell(const cart::term::cell &c) noexcept -> bool
-    { return c.character.is_empty(); }
+    constexpr auto empty_cell(const cart::term::cell &c) noexcept -> bool
+    { return c.content.empty(); }
 }
 
 auto grid::resize(std::size_t new_rows, std::size_t new_columns) noexcept -> result<resize_delta>
@@ -147,12 +147,12 @@ auto grid::resize(std::size_t new_rows, std::size_t new_columns) noexcept -> res
     std::vector<cell>              current;
     for (const auto &line : m_lines)
     {
-        if (line.attribute.has(row::attribute::wrapped))
+        if (line.attribute.has(row::attributes::wrapped))
             current.insert(current.end(), line.cells.begin(), line.cells.end());
         else
         {
             std::size_t last = line.cells.size();
-            while (last > 0 and is_empty_cell(line.cells[last - 1])) last--;
+            while (last > 0 and empty_cell(line.cells[last - 1])) last--;
             current.insert(current.end(), line.cells.begin(), line.cells.begin() + last);
             logical.emplace_back(std::move(current));
             current.clear();
@@ -176,21 +176,20 @@ auto grid::resize(std::size_t new_rows, std::size_t new_columns) noexcept -> res
         {
             using enum cell::character::kind;
 
-            if (line[i].character.get_kind() == spacer)
+            if (line[i].content.kind() == spacer)
             {
                 i++;
                 continue;
             }
 
-            const bool is_wide
-                = (i + 1 < line.size() and line[i + 1].character.get_kind() == spacer);
+            const bool is_wide = (i + 1 < line.size() and line[i + 1].content.kind() == spacer);
             const std::size_t w = is_wide ? 2UZ : 1UZ;
 
             if (new_columns == 1 and is_wide)
             {
                 if (pos >= 1)
                 {
-                    out.attribute.set(row::attribute::wrapped, true);
+                    out.attribute.set(row::attributes::wrapped, true);
                     reflowed.emplace_back(std::move(out));
                     out = row { new_columns };
                     pos = 0;
@@ -203,7 +202,7 @@ auto grid::resize(std::size_t new_rows, std::size_t new_columns) noexcept -> res
 
             if (pos + w > new_columns)
             {
-                out.attribute.set(row::attribute::wrapped, true);
+                out.attribute.set(row::attributes::wrapped, true);
                 reflowed.emplace_back(std::move(out));
                 out = row { new_columns };
                 pos = 0;

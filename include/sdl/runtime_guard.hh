@@ -22,7 +22,7 @@ namespace cart::sdl
                 return {};
             }
 
-            static void deinit()
+            static void deinit() noexcept
             {
                 TTF_Quit();
                 SDL_Quit();

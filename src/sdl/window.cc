@@ -23,29 +23,38 @@ catch (error &e)
 }
 
 
-auto window::get_id() noexcept -> std::uint64_t { return SDL_GetWindowID(get()); }
+auto window::get_id() const noexcept -> std::uint64_t { return SDL_GetWindowID(get()); }
 
 
-auto window::get_size() -> std::pair<int, int>
+auto window::get_size() const noexcept -> result<size>
 {
-    std::pair<int, int> size;
-    if (!SDL_GetWindowSize(get(), &size.first, &size.second))
-        throw error { "Failed to get window size: {}", SDL_GetError() };
-    return size;
+    int w;
+    int h;
+
+    if (!SDL_GetWindowSize(get(), &w, &h))
+        return error { "Failed to get window size: {}", SDL_GetError() }.unexpected();
+    return size { static_cast<float>(w), static_cast<float>(h) };
 }
 
 
-auto window::get_size_in_pixels() -> std::pair<int, int>
+auto window::get_size_in_pixels() const noexcept -> result<size>
 {
-    std::pair<int, int> size;
-    if (!SDL_GetWindowSizeInPixels(get(), &size.first, &size.second))
-        throw error { "Failed to get window size in pixels: {}", SDL_GetError() };
-    return size;
+    int w;
+    int h;
+
+    if (!SDL_GetWindowSizeInPixels(get(), &w, &h))
+        return error { "Failed to get window size in pixels: {}", SDL_GetError() }.unexpected();
+    return size { static_cast<float>(w), static_cast<float>(h) };
 }
 
 
-auto window::get_display_scale() noexcept -> float { return SDL_GetWindowDisplayScale(get()); }
-auto window::get_pixel_density() noexcept -> float { return SDL_GetWindowPixelDensity(get()); }
+auto window::get_display_scale() const noexcept -> float
+{ return SDL_GetWindowDisplayScale(get()); }
+
+
+auto window::get_pixel_density() const noexcept -> float
+{ return SDL_GetWindowPixelDensity(get()); }
+
 
 auto window::start_text_input() noexcept -> result<>
 {
@@ -53,6 +62,7 @@ auto window::start_text_input() noexcept -> result<>
         return error { "Failed to start text input: {}", SDL_GetError() }.unexpected();
     return {};
 }
+
 
 auto window::stop_text_input() noexcept -> result<>
 {

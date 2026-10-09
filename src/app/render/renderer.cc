@@ -31,7 +31,7 @@ auto renderer::on_frame(const config &config) noexcept -> result<action>
 auto renderer::on_config_changed(const config &config) noexcept -> result<>
 { return mf_load_fonts(config.get_font()); }
 
- 
+
 auto renderer::mf_load_fonts(const cfg::font &font_config) noexcept -> result<>
 {
     const float size = font_config.get_size();

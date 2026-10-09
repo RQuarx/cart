@@ -7,30 +7,6 @@ namespace cart::term
 {
     struct cell
     {
-        class attribute final : public trait::attribute<std::uint16_t>
-        {
-        public:
-            enum flag : std::uint16_t
-            {
-                bold          = 1 << 0,
-                dim           = 1 << 1,
-                italic        = 1 << 2,
-                underline     = 1 << 3,
-                blinking      = 1 << 4,
-                inverse       = 1 << 5,
-                hidden        = 1 << 6,
-                strikethrough = 1 << 7,
-
-                clean    = 1 << 8,
-                selected = 1 << 9,
-                confined = 1 << 10,
-                url      = 1 << 11,
-            };
-
-            std::uint8_t width = 0;
-        };
-
-
         /**
          * A cell's content, packed into 32 bits.
          *
@@ -73,7 +49,7 @@ namespace cart::term
 
 
             [[nodiscard]]
-            constexpr auto get_kind() const noexcept -> kind
+            constexpr auto kind() const noexcept -> kind
             {
                 if (m_value <= max_codepoint) return kind::codepoint;
                 if (m_value >= spacer_base) return kind::spacer;
@@ -81,23 +57,23 @@ namespace cart::term
             }
 
             [[nodiscard]]
-            constexpr auto is_empty() const noexcept -> bool
+            constexpr auto empty() const noexcept -> bool
             { return m_value == 0; }
 
 
             /* Valid only if is_codepoint() == true */
             [[nodiscard]]
-            constexpr auto get_codepoint() const noexcept -> char32_t
+            constexpr auto as_codepoint() const noexcept -> char32_t
             { return char32_t(m_value); }
 
             /* Valid only if is_composed() == true */
             [[nodiscard]]
-            constexpr auto get_composed_index() const noexcept -> std::uint32_t
+            constexpr auto as_composed_index() const noexcept -> std::uint32_t
             { return m_value - character::composed_lo; }
 
             /* Valid only if is_spacer() == true */
             [[nodiscard]]
-            constexpr auto get_spacer_remaining() const noexcept -> std::uint32_t
+            constexpr auto as_spacer_remaining() const noexcept -> std::uint32_t
             { return m_value - spacer_base; }
 
 
@@ -123,6 +99,30 @@ namespace cart::term
         };
 
 
+        class attributes final : public trait::attribute<std::uint16_t>
+        {
+        public:
+            enum flag : std::uint16_t
+            {
+                bold          = 1 << 0,
+                dim           = 1 << 1,
+                italic        = 1 << 2,
+                underline     = 1 << 3,
+                blinking      = 1 << 4,
+                inverse       = 1 << 5,
+                hidden        = 1 << 6,
+                strikethrough = 1 << 7,
+
+                clean    = 1 << 8,
+                selected = 1 << 9,
+                confined = 1 << 10,
+                url      = 1 << 11,
+            };
+
+            std::uint8_t width = 0;
+        };
+
+
         struct colors
         {
             term::color bg = term::color::make_default_bg();
@@ -139,11 +139,9 @@ namespace cart::term
         };
 
 
-        character character = character::codepoint(U' ');
-        attribute attribute;
-        colors    colors;
-
-        /* 2 bytes leftover... extra attributes or stuff can be added */
+        character  content = character::codepoint(U' ');
+        attributes attribute;
+        colors     colors;
     };
 
 

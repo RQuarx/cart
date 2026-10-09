@@ -6,7 +6,7 @@ project('cart', 'cpp',
 #                           'cpp_importstd': true, shii doesn't work :<
                            'warning_level': '3' })
 
-add_global_arguments([ '-DTOML_EXCEPTIONS=0' ], language: 'cpp')
+add_global_arguments([ '-DTOML_EXCEPTIONS=0', '-DSPDLOG_USE_STD_FORMAT' ], language: 'cpp')
 
 dependencies = [ dependency('sdl3'),
                  dependency('tomlplusplus'),
@@ -21,8 +21,14 @@ configure_file(output: 'metadata.hh',
                configuration: { 'PROJECT_NAME':    meson.project_name(),
                                 'PROJECT_VERSION': meson.project_version(),
                                 'PROJECT_LICENSE': meson.project_license()[0] })
+
+include = include_directories('include', '.')
 subdir('src')
+
+if get_option('build-tests')
+    subdir('tests')
+endif
+
 executable(meson.project_name(), src,
            dependencies:        dependencies,
-           include_directories: include_directories('include', '.'),
-           cpp_args:            [ '-DSPDLOG_USE_STD_FORMAT' ])
+           include_directories: include_directories('include', '.'))

@@ -75,7 +75,7 @@ void grid::resize(std::size_t new_columns)
     if (new_columns == columns()) return;
     std::deque<term::row> new_rows;
 
-    for (const auto &row : m_rows) {}
+    for (const auto &row : m_rows) { /* TODO: implement reflow and whatnot */ }
 
     m_rows = std::move(new_rows);
 }

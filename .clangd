@@ -16,19 +16,20 @@ Diagnostics:
             - readability-*
             - modernize-*
         Remove:
-            - readability-braces-around-statements
-            - readability-identifier-length
-            - readability-magic-numbers
-            - readability-inconsistent-ifelse-braces
             - bugprone-easily-swappable-parameters
-            - readability-avoid-nested-conditional-operator
             - bugprone-narrowing-conversions
-            - modernize-use-trailing-return-type
-            - modernize-use-designated-initializers
+            - bugprone-throwing-static-initialization
             - modernize-avoid-c-arrays
             - modernize-avoid-c-style-cast
-            - readability-trailing-comma
+            - modernize-use-designated-initializers
             - modernize-use-integer-sign-comparison
+            - modernize-use-trailing-return-type
+            - readability-avoid-nested-conditional-operator
+            - readability-braces-around-statements
+            - readability-identifier-length
+            - readability-inconsistent-ifelse-braces
+            - readability-magic-numbers
+            - readability-trailing-comma
 
 Index:
     Background: Build

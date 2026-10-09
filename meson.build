@@ -6,7 +6,8 @@ project('cart', 'cpp',
 #                           'cpp_importstd': true, shii doesn't work :<
                            'warning_level': '3' })
 
-add_global_arguments([ '-DTOML_EXCEPTIONS=0', '-DSPDLOG_USE_STD_FORMAT' ], language: 'cpp')
+add_global_arguments([ '-DTOML_EXCEPTIONS=0', '-DSPDLOG_USE_STD_FORMAT',
+                       '-Wno-deprecated-literal-operator' ], language: 'cpp')
 
 dependencies = [ dependency('sdl3'),
                  dependency('tomlplusplus'),

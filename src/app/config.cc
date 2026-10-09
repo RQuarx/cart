@@ -77,7 +77,7 @@ try
         return res.error().unexpected();
     }
 
-    auto fn = [cfg](result<std::reference_wrapper<const ::inotify_event>> res)
+    auto fn = [cfg](result<const ::inotify_event *> res)
     {
         if (!res)
         {
@@ -85,7 +85,7 @@ try
             return;
         }
 
-        std::string_view name { res->get().name, res->get().len };
+        std::string_view name { (*res)->name, (*res)->len };
 
         spdlog::info("Config file {} has been modified, reloading config.", name);
         if (auto res = cfg->mf_reload(); !res) spdlog::error("{}", res.error());
@@ -126,7 +126,7 @@ auto config::mf_reload() noexcept -> result<>
             if (auto table = cfg::utils::get<toml::table>(res.table(), key); table.has_value())
             {
                 spdlog::info("Parsing config for {}.", key);
-                if (auto res = cfg->parse(*table); !res) return res.error().unexpected();
+                if (auto res = cfg->parse(**table); !res) return res.error().unexpected();
             }
     }
     else

@@ -1,10 +1,7 @@
+#pragma region "row::extras impl"
 #include <algorithm>
-#include <ranges>
 
 #include "terminal/row.hh"
-
-using cart::term::row;
-
 
 namespace
 {
@@ -13,7 +10,7 @@ namespace
      * @note A range that strictly contains the hole is split into two.
      */
     template <typename T>
-    void erase_in(std::vector<T> &v, row::range range)
+    void erase_in(std::vector<T> &v, cart::term::row::range range)
     {
         for (std::size_t i = 0; i < v.size();)
         {
@@ -54,8 +51,8 @@ namespace
      * @brief Insert `value`, replacing anything under it and merging with the
      *        previous/next range when they touch and have the same payload.
      */
-    template <typename T, typename Same>
-    void put_in(std::vector<T> &v, T value, Same same)
+    template <typename T>
+    void put_in(std::vector<T> &v, T value)
     {
         erase_in(v, { value.begin, value.end });
 
@@ -66,13 +63,13 @@ namespace
 
         bool merged = false;
 
-        if (idx > 0 and v[idx - 1].end == value.begin and same(v[idx - 1], value))
+        if (idx > 0 and v[idx - 1].end == value.begin and v[idx - 1] == value)
         {
             v[idx - 1].end = value.end;
             merged         = true;
         }
 
-        if (idx < v.size() and v[idx].begin == value.end and same(v[idx], value))
+        if (idx < v.size() and v[idx].begin == value.end and v[idx] == value)
         {
             if (merged)
             {
@@ -91,160 +88,215 @@ namespace
 }
 
 
-void row::extras::clear()
+using extras = cart::term::row::extras;
+
+
+auto extras::mf_uris() noexcept -> std::optional<std::vector<uri_range> *>
 {
-    uris.clear();
-    underlines.clear();
+    if (m_data == nullptr) return std::nullopt;
+    return &m_data->first;
 }
 
 
-void row::damage() noexcept
+auto extras::mf_underlines() noexcept -> std::optional<std::vector<underline_range> *>
 {
-    for (auto &c : cells) c.attribute.set(cell::attributes::clean, false);
-    this->attribute.set(attributes::clean, false);
+    if (m_data == nullptr) return std::nullopt;
+    return &m_data->second;
 }
 
 
-void row::erase(color bg) noexcept
+auto extras::uris() const noexcept -> std::optional<std::span<const uri_range>>
 {
-    cell blank {};
-    blank.colors.bg = bg;
-    std::ranges::fill(cells, blank);
-
-    if (extras != nullptr) extras->clear();
-
-    attribute.set(attributes::wrapped, false);
-    attribute.set(attributes::clean, false);
-    attribute.set(attributes::prompt_row, false);
-
-    attribute.prompt_range = { attributes::unset, attributes::unset };
+    return const_cast<extras &>(*this).mf_uris().transform([](const std::vector<uri_range> *uris)
+                                                           { return std::span { *uris }; });
 }
 
 
-void row::erase(range range, color bg)
+auto extras::underlines() const noexcept -> std::optional<std::span<const underline_range>>
 {
-    range.end = std::min<std::uint32_t>(range.end, std::uint32_t(cells.size()));
-    if (range.begin >= range.end) return;
+    return const_cast<extras &>(*this).mf_underlines().transform(
+        [](const std::vector<underline_range> *underlines) { return std::span { *underlines }; });
+}
 
-    cell blank {};
-    blank.colors.bg = bg;
-    std::fill(cells.begin() + range.begin, cells.begin() + range.end, blank);
 
-    if (extras != nullptr)
+void extras::clear()
+{
+    if (auto res = mf_uris()) (*res)->clear();
+    if (auto res = mf_underlines()) (*res)->clear();
+}
+
+
+void extras::add_uri(uri_range range)
+{
+    auto *uris = *mf_uris().or_else(
+        [&]
+        {
+            m_data = std::make_unique<range_pair>();
+            return mf_uris();
+        });
+
+    put_in(*uris, std::move(range));
+}
+
+
+void extras::add_underline(underline_range range)
+{
+    auto *underlines = *mf_underlines().or_else(
+        [&]
+        {
+            m_data = std::make_unique<range_pair>();
+            return mf_underlines();
+        });
+
+    put_in(*underlines, range);
+}
+
+
+void extras::erase_uri(range range)
+{
+    auto _ = mf_uris().and_then(
+        [&](std::vector<uri_range> *r)
+        {
+            erase_in(*r, range);
+            return mf_uris();
+        });
+}
+
+
+void extras::erase_underline(range range)
+{
+    auto _ = mf_underlines().and_then(
+        [&](std::vector<underline_range> *r)
+        {
+            erase_in(*r, range);
+            return mf_underlines();
+        });
+}
+
+#pragma endregion
+
+#pragma region "row implementation"
+#include <spdlog/spdlog.h>
+
+using cart::term::row;
+
+
+row::row(std::size_t columns) : m_columns { columns } {}
+
+
+auto row::operator[](std::size_t col) noexcept -> result<cell *>
+{
+    if (col >= m_columns.size())
+        return error { "Attempted to access out-of-range column {} (row::columns() = {})", col,
+                       columns() }
+            .unexpected();
+    return &m_columns[col];
+}
+
+auto row::operator[](std::size_t col) const noexcept -> result<const cell *>
+{
+    return const_cast<row &>(*this)[col].transform([](cell *c) -> const cell * { return c; });
+}
+
+
+auto row::operator[](range r) noexcept -> result<std::span<cell>>
+{
+    if (r.begin >= columns())
+        return error { "Invalid range, begin ({}) >= row::columns() ({})", r.begin, columns() }
+            .unexpected();
+    if (r.begin >= r.end)
+        return error { "Invalid range, begin ({}) >= end ({})", r.begin, r.end }.unexpected();
+    return std::span { m_columns.begin() + r.begin, m_columns.begin() + r.clamp(columns()).end };
+}
+
+auto row::operator[](range r) const noexcept -> result<std::span<const cell>>
+{
+    return const_cast<row &>(*this)[r].transform([](std::span<cell> c) -> std::span<const cell>
+                                                 { return c; });
+}
+
+
+auto row::columns() const noexcept -> std::size_t { return m_columns.size(); }
+
+auto row::is_wrapped() const noexcept -> bool { return m_attribute.has(attributes::wrapped); }
+auto row::is_dirty() const noexcept -> bool { return !m_attribute.has(attributes::clean); }
+auto row::is_prompt_row() const noexcept -> bool { return m_attribute.has(attributes::prompt_row); }
+
+void row::set_wrapped(bool state) noexcept { m_attribute.set(attributes::wrapped, state); }
+void row::set_dirty(bool state) noexcept
+{
+    m_attribute.set(attributes::clean, !state);
+    for (auto &c : m_columns) c.attribute.set(cell::attributes::clean, !state);
+}
+
+void row::set_prompt_row(std::optional<row::range> prompt_range) noexcept
+{
+    m_attribute.set(attributes::prompt_row, prompt_range.has_value());
+    m_attribute.prompt_range = prompt_range.value_or(range {});
+}
+
+
+auto row::uris() const noexcept -> std::optional<std::span<const extras::uri_range>>
+{ return m_extras.uris(); }
+
+
+auto row::underlines() const noexcept -> std::optional<std::span<const extras::underline_range>>
+{ return m_extras.underlines(); }
+
+auto row::add_uri(extras::uri_range range) noexcept -> result<>
+{
+    if (range.begin >= columns())
+        return error { "Invalid range, begin ({}) >= row::columns() ({})", range.begin, columns() }
+            .unexpected();
+    if (range.begin >= range.end)
+        return error { "Invalid range, begin ({}) >= end ({})", range.begin, range.end }
+            .unexpected();
+    m_extras.add_uri(range);
+    return {};
+}
+
+auto row::add_underline(extras::underline_range range) noexcept -> result<>
+{
+    if (range.begin >= columns())
+        return error { "Invalid range, begin ({}) >= row::columns() ({})", range.begin, columns() }
+            .unexpected();
+    if (range.begin >= range.end)
+        return error { "Invalid range, begin ({}) >= end ({})", range.begin, range.end }
+            .unexpected();
+    m_extras.add_underline(range);
+    return {};
+}
+
+void row::erase_uri(row::range range)
+{
+    if (range.begin >= columns())
     {
-        erase_in(extras->uris, range);
-        erase_in(extras->underlines, range);
+        spdlog::error("Invalid range, begin ({}) >= row::columns() ({})", range.begin, columns());
+        return;
     }
 
-    attribute.set(attributes::clean, false);
-}
-
-
-void row::resize(std::size_t columns)
-{
-    const auto old_columns = cells.size();
-    if (columns == old_columns) return;
-
-    if (columns > old_columns)
-        cells.resize(columns); /* may throw, before anything else is modified */
-    else
+    if (range.begin >= range.end)
     {
-        using enum cell::character::kind;
-
-        /* Don't leave half of a wide glyph at the new edge */
-        if (cells[columns].content.kind() == spacer)
-        {
-            std::size_t c = columns;
-            while (c > 0 and cells[c - 1].content.kind() == spacer) c--;
-
-            if (c > 0)
-                for (std::size_t i = c - 1; i < columns; i++) cells[i].content = {};
-        }
-
-        cells.resize(columns);
-
-        const auto cut = std::uint32_t(columns);
-
-        if (extras != nullptr)
-        {
-            range r { cut, range::to_end };
-
-            erase_in(extras->uris, r); /* the hole runs to infinity, so never splits */
-            erase_in(extras->underlines, r);
-        }
-
-        if (attribute.prompt_range.begin != attributes::unset)
-            attribute.prompt_range.begin = std::min(attribute.prompt_range.begin, cut);
-        if (attribute.prompt_range.end != attributes::unset)
-            attribute.prompt_range.end = std::min(attribute.prompt_range.end, cut);
+        spdlog::warn("Invalid range, begin ({}) >= end ({})", range.begin, range.end);
+        return;
     }
 
-    damage();
+    m_extras.erase_uri(range);
 }
 
-
-void row::put_uri(range range, std::string_view uri, std::size_t id)
+void row::erase_underline(row::range range)
 {
-    range.end = std::min<std::uint32_t>(range.end, std::uint32_t(cells.size()));
-    if (range.begin >= range.end) return;
-
-    if (extras == nullptr) extras = std::make_unique<struct extras>();
-
-    put_in(extras->uris,
-           uri_range {
-               range,
-               std::string { uri },
-               id,
-           },
-           [](const uri_range &a, const uri_range &b) { return a.id == b.id and a.uri == b.uri; });
-}
-
-
-void row::put_underline(range range, color color, underline_style style)
-{
-    range.end = std::min<std::uint32_t>(range.end, std::uint32_t(cells.size()));
-    if (range.begin >= range.end) return;
-
-    if (extras == nullptr) extras = std::make_unique<struct extras>();
-
-    put_in(extras->underlines, underline_range { range, color, style },
-           [](const underline_range &a, const underline_range &b)
-           { return a.style == b.style and a.fg == b.fg; });
-}
-
-
-void row::erase_uris(range range) /* NOLINT */
-{
-    if (extras != nullptr)
-        erase_in(extras->uris, { range.begin, std::min(range.end, range::to_end) });
-}
-
-void row::erase_underlines(range range) /* NOLINT */
-{
-    if (extras != nullptr)
-        erase_in(extras->underlines, { range.begin, std::min(range.end, range::to_end) });
-}
-
-
-auto row::attribute_range(cell::attributes::flag flag) noexcept -> std::optional<range>
-{
-    std::uint32_t start = range::to_end;
-    std::uint32_t end   = 0;
-
-    for (const auto &[i, cell] : std::views::enumerate(cells))
+    if (range.begin >= columns())
     {
-        if (cell.attribute.has(flag))
-        {
-            if (start == range::to_end)
-                start = i;
-            else
-                end = i;
-
-            continue;
-        }
-
-        if (start != range::to_end) return range { start, end + 1 };
+        spdlog::error("Invalid range, begin ({}) >= row::columns() ({})", range.begin, columns());
+        return;
     }
 
-    return std::nullopt;
+    if (range.begin >= range.end)
+    {
+        spdlog::warn("Invalid range, begin ({}) >= end ({})", range.begin, range.end);
+        return;
+    }
+
+    m_extras.erase_underline(range);
 }

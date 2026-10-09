@@ -23,7 +23,7 @@ namespace cart::app
     };
 
 
-    template <std::invocable<result<std::reference_wrapper<const ::inotify_event>>> F>
+    template <std::invocable<result<const ::inotify_event *>> F>
     auto create_fs_watcher(const std::filesystem::path &path, F &&fn) noexcept
         -> result<std::jthread>
     {
@@ -66,10 +66,10 @@ namespace cart::app
 
                     for (auto offset = 0UZ; offset < std::size_t(size);)
                     {
-                        const auto &event
-                            = *reinterpret_cast<const ::inotify_event *>(buffer.data() + offset);
-                        fn(std::ref(event));
-                        offset += sizeof(::inotify_event) + event.len;
+                        const auto *event
+                            = reinterpret_cast<const ::inotify_event *>(buffer.data() + offset);
+                        fn(event);
+                        offset += sizeof(::inotify_event) + event->len;
                     }
                 }
 

@@ -79,21 +79,21 @@ namespace cart::app::cfg::utils
 
     template <typename T>
     auto get(const toml::table &table, std::string_view key)
-        -> std::optional<std::reference_wrapper<const toml::value<T>>>
+        -> std::optional<const toml::value<T> *>
     {
         const toml::node *value = table.get(key);
         if (value == nullptr) return std::nullopt;
-        return as<T>(key, *value);
+        return &as<T>(key, *value);
     }
 
 
     template <typename T>
     auto get(const toml::table &table, std::string_view key)
-        -> std::optional<std::reference_wrapper<const T>>
+        -> std::optional<const T *>
         requires std::same_as<T, toml::table> or std::same_as<T, toml::array>
     {
         const toml::node *value = table.get(key);
         if (value == nullptr) return std::nullopt;
-        return as<T>(key, *value);
+        return &as<T>(key, *value);
     }
 }

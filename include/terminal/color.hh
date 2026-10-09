@@ -68,7 +68,7 @@ namespace cart::term
 
 
     private:
-        std::uint32_t m_data;
+        std::uint32_t m_data = 0;
 
 
         constexpr color(std::uint32_t data) noexcept : m_data { data } {}

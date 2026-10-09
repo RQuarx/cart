@@ -1,260 +1,81 @@
-#include <algorithm>
-#include <vector>
-
 #include "terminal/grid.hh"
 
 using cart::term::grid;
 
 
-auto grid::create(std::size_t rows, std::size_t columns, std::size_t scrollback_limit) noexcept
-    -> result<grid>
-
+auto grid::columns() const noexcept -> std::size_t
 {
-    if (rows == 0 or columns == 0)
-        return error { "Invalid size passed (rows: {}, columns: {})", rows, columns }.unexpected();
-    return grid { rows, columns, scrollback_limit };
+    if (m_rows.empty()) return 0;
+    return m_rows.front().columns();
 }
 
 
-grid::grid(std::size_t rows, std::size_t columns, std::size_t scrollback_limit)
-    : m_screen_rows { rows }, m_columns { columns }, m_scrollback_limit { scrollback_limit }
+auto grid::rows() const noexcept -> std::size_t { return m_rows.size(); }
+
+
+auto grid::operator[](std::size_t row) noexcept -> result<term::row *>
 {
-    for (std::size_t i = 0; i < rows; i++) m_lines.emplace_back(columns);
+    if (row >= rows())
+        return error { "Out-of-range row access. `row` ({}) >= grid::rows() ({})", row, rows() }
+            .unexpected();
+    return &m_rows[row];
+
+    auto s = (*this)[0, 1];
 }
 
 
-void grid::trim_scrollback() noexcept
-{
-    while (scrollback_size() > m_scrollback_limit)
-    {
-        m_lines.pop_front();
-        m_evicted++;
-    }
+auto grid::operator[](std::size_t row) const noexcept -> result<const term::row *>
+{ return const_cast<grid &>(*this)[row]; }
 
-    m_view_offset = std::min(m_view_offset, scrollback_size());
+
+auto grid::operator[](std::size_t begin, std::size_t end) noexcept
+    -> result<std::ranges::subrange<std::deque<term::row>::iterator>>
+{
+    if (begin >= end)
+        return error { "Invalid range, `begin` ({}) >= `end` ({})", begin, end }.unexpected();
+    if (end >= rows())
+        return error { "Out-of-range row access. `end` ({}) >= grid::rows() ({})", end, rows() }
+            .unexpected();
+
+    return std::ranges::subrange { m_rows.begin() + begin, m_rows.begin() + end };
 }
 
 
-void grid::scroll_into_scrollback(std::size_t n)
+auto grid::operator[](std::size_t begin, std::size_t end) const noexcept
+    -> result<std::ranges::subrange<std::deque<term::row>::const_iterator>>
+{ return const_cast<grid &>(*this)[begin, end]; }
+
+
+void grid::pop_front() { m_rows.pop_front(); }
+void grid::push_back() { push_back(row { columns() }); }
+
+
+void grid::push_back(row r)
 {
-    for (std::size_t i = 0; i < n; i++)
-    {
-        if (scrollback_size() >= m_scrollback_limit)
-        {
-            /* full: recycle the oldest line as the new bottom row */
-            row recycled = std::move(m_lines.front());
-            m_lines.pop_front();
-            m_evicted++;
-
-            recycled.erase();
-            m_lines.push_back(std::move(recycled));
-        }
-        else
-            m_lines.emplace_back(m_columns);
-
-        /* Keep the user's scrolled-back view anchored to the same text */
-        if (m_view_offset > 0) m_view_offset = std::min(m_view_offset + 1, scrollback_size());
-    }
+    m_rows.emplace_back(std::move(r));
+    mf_ensure_rows_is_under_limit();
 }
 
 
-auto grid::scroll_up(scroll_region r, std::size_t n) noexcept -> result<>
+void grid::set_rows_limit(std::size_t n)
 {
-    n = std::min(n, r.bottom - r.top);
-    if (n == 0) return {};
-
-    const bool full_screen = r.top == 0 and r.bottom == m_screen_rows;
-
-    if (full_screen and m_scrollback_limit > 0)
-    {
-        scroll_into_scrollback(n);
-        return {};
-    }
-
-    /* partial region (or no scrollback): rotate the top n rows to the bottom and blank them */
-    const auto base  = m_lines.begin() + static_cast<std::ptrdiff_t>(screen_base());
-    const auto first = base + static_cast<std::ptrdiff_t>(r.top);
-    const auto last  = base + static_cast<std::ptrdiff_t>(r.bottom);
-
-    std::rotate(first, first + static_cast<std::ptrdiff_t>(n), last);
-
-    for (std::size_t i = r.bottom - n; i < r.bottom; i++) row_at(i).erase();
-    for (std::size_t i = r.top; i < r.bottom; i++)
-        row_at(i).damage(); /* no pixel-shift optimization yet: repaint the region */
-
-    return {};
+    m_rows_limit = n;
+    mf_ensure_rows_is_under_limit();
 }
 
 
-auto grid::scroll_down(scroll_region r, std::size_t n) noexcept -> result<>
+void grid::mf_ensure_rows_is_under_limit()
 {
-    n = std::min(n, r.bottom - r.top);
-    if (n == 0) return {};
-
-    const auto base  = m_lines.begin() + static_cast<std::ptrdiff_t>(screen_base());
-    const auto first = base + static_cast<std::ptrdiff_t>(r.top);
-    const auto last  = base + static_cast<std::ptrdiff_t>(r.bottom);
-
-    /* bottom n rows rotate to the top, they are blanked. Scrollback is never touched. */
-    std::rotate(first, last - static_cast<std::ptrdiff_t>(n), last);
-
-    for (std::size_t i = r.top; i < r.top + n; ++i) row_at(i).erase();
-
-    for (std::size_t i = r.top; i < r.bottom; ++i) row_at(i).damage();
-
-    return {};
+    while (rows() > m_rows_limit) pop_front();
 }
 
 
-namespace
+void grid::resize(std::size_t new_columns)
 {
-    [[nodiscard]]
-    constexpr auto empty_cell(const cart::term::cell &c) noexcept -> bool
-    { return c.content.empty(); }
+    if (new_columns == columns()) return;
+    std::deque<term::row> new_rows;
+
+    for (const auto &row : m_rows) {}
+
+    m_rows = std::move(new_rows);
 }
-
-auto grid::resize(std::size_t new_rows, std::size_t new_columns) noexcept -> result<resize_delta>
-{
-    if (new_rows == 0 or new_columns == 0)
-        return error { "Invalid new size, 0 is not allowed." }.unexpected();
-
-    if (new_rows == m_screen_rows and new_columns == m_columns) return resize_delta {};
-
-    if (new_columns == m_columns)
-    {
-        resize_delta delta {};
-
-        const auto grow = new_rows > m_screen_rows ? new_rows - m_screen_rows : 0UZ;
-        if (grow > 0)
-        {
-            delta.pulled = std::min(grow, scrollback_size());
-            for (auto i = delta.pulled; i < grow; ++i) m_lines.emplace_back(m_columns);
-        }
-        else
-            delta.pushed = m_screen_rows - new_rows;
-
-        m_screen_rows = new_rows;
-        trim_scrollback();
-
-        for (std::size_t i = 0; i < m_screen_rows; ++i) row_at(i).damage();
-
-        return delta;
-    }
-
-    const auto old_scrollback = scrollback_size();
-
-    std::vector<std::vector<cell>> logical;
-    std::vector<cell>              current;
-    for (const auto &line : m_lines)
-    {
-        if (line.attribute.has(row::attributes::wrapped))
-            current.insert(current.end(), line.cells.begin(), line.cells.end());
-        else
-        {
-            std::size_t last = line.cells.size();
-            while (last > 0 and empty_cell(line.cells[last - 1])) last--;
-            current.insert(current.end(), line.cells.begin(), line.cells.begin() + last);
-            logical.emplace_back(std::move(current));
-            current.clear();
-        }
-    }
-    if (!current.empty()) logical.emplace_back(std::move(current));
-
-    std::deque<row> reflowed;
-    for (const auto &line : logical)
-    {
-        if (line.empty())
-        {
-            reflowed.emplace_back(new_columns);
-            continue;
-        }
-
-        row         out { new_columns };
-        std::size_t pos = 0;
-        std::size_t i   = 0;
-        while (i < line.size())
-        {
-            using enum cell::character::kind;
-
-            if (line[i].content.kind() == spacer)
-            {
-                i++;
-                continue;
-            }
-
-            const bool is_wide = (i + 1 < line.size() and line[i + 1].content.kind() == spacer);
-            const std::size_t w = is_wide ? 2UZ : 1UZ;
-
-            if (new_columns == 1 and is_wide)
-            {
-                if (pos >= 1)
-                {
-                    out.attribute.set(row::attributes::wrapped, true);
-                    reflowed.emplace_back(std::move(out));
-                    out = row { new_columns };
-                    pos = 0;
-                }
-                out.cells[pos] = line[i];
-                pos           += 1;
-                i             += 2;
-                continue;
-            }
-
-            if (pos + w > new_columns)
-            {
-                out.attribute.set(row::attributes::wrapped, true);
-                reflowed.emplace_back(std::move(out));
-                out = row { new_columns };
-                pos = 0;
-                continue;
-            }
-
-            out.cells[pos] = line[i];
-            if (is_wide)
-            {
-                out.cells[pos + 1] = line[i + 1];
-                pos               += 2;
-                i                 += 2;
-            }
-            else
-            {
-                pos += 1;
-                i   += 1;
-            }
-        }
-        reflowed.emplace_back(std::move(out));
-    }
-
-    m_evicted += m_lines.size();
-    m_lines.clear();
-    while (reflowed.size() > new_rows)
-    {
-        m_lines.emplace_back(std::move(reflowed.front()));
-        reflowed.pop_front();
-    }
-    for (auto &r : reflowed) m_lines.emplace_back(std::move(r));
-    while (m_lines.size() < new_rows) m_lines.emplace_back(new_columns);
-
-    m_screen_rows = new_rows;
-    m_columns     = new_columns;
-    m_view_offset = 0;
-    trim_scrollback();
-
-    for (std::size_t j = 0; j < m_screen_rows; ++j) row_at(j).damage();
-
-    resize_delta delta {};
-    const auto   new_scrollback = scrollback_size();
-    if (new_scrollback >= old_scrollback)
-        delta.pushed = new_scrollback - old_scrollback;
-    else
-        delta.pulled = old_scrollback - new_scrollback;
-
-    return delta;
-}
-
-
-void grid::scroll_view_up(std::size_t n) noexcept
-{ m_view_offset = std::min(m_view_offset + n, scrollback_size()); }
-
-void grid::scroll_view_down(std::size_t n) noexcept { m_view_offset -= std::min(n, m_view_offset); }
-

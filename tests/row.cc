@@ -604,17 +604,6 @@ suite<"row flags"> flags_suite = []
         expect(!r.prompt_row());
     };
 
-    "set_dirty propagates to every cell"_test = []
-    {
-        row r { 6 };
-
-        r.set_dirty(false);
-        for (const auto &c : r) expect(c.attribute.has(cell::attributes::clean));
-
-        r.set_dirty(true);
-        for (const auto &c : r) expect(!c.attribute.has(cell::attributes::clean));
-    };
-
     /* The flags below must be independent of each other. */
     "setting wrapped does not touch dirty / prompt"_test = []
     {
@@ -915,7 +904,7 @@ suite<"cell::attributes"> cell_attributes_suite = []
         for (auto f :
              { cell::attributes::bold, cell::attributes::dim, cell::attributes::italic,
                cell::attributes::underline, cell::attributes::blinking, cell::attributes::inverse,
-               cell::attributes::hidden, cell::attributes::strikethrough, cell::attributes::clean,
+               cell::attributes::hidden, cell::attributes::strikethrough,
                cell::attributes::selected, cell::attributes::confined, cell::attributes::url })
             expect(!c.attribute.has(f));
     };

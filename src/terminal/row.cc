@@ -227,12 +227,7 @@ auto row::prompt_row() const noexcept -> std::optional<row::range>
 }
 
 void row::set_wrapped(bool state) noexcept { m_attribute.set(attributes::wrapped, state); }
-void row::set_dirty(bool state) noexcept
-{
-    m_attribute.set(attributes::clean, !state);
-    for (auto &c : m_columns) c.attribute.set(cell::attributes::clean, !state);
-}
-
+void row::set_dirty(bool state) noexcept { m_attribute.set(attributes::clean, !state); }
 void row::set_prompt_row(std::optional<row::range> prompt_range) noexcept
 {
     m_attribute.set(attributes::prompt_row, prompt_range.has_value());

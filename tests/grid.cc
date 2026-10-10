@@ -302,7 +302,7 @@ suite<"grid resize: reflow"> reflow_suite = []
         expect(!row_at(g, 0).is_wrapped());
     };
 
-    "every resulting row and cell is dirty"_test = []
+    "every resulting row is dirty"_test = []
     {
         auto src = make_row(10, "abcdefghij");
         src.set_dirty(false);
@@ -314,7 +314,6 @@ suite<"grid resize: reflow"> reflow_suite = []
         {
             auto &r = row_at(g, i);
             expect(r.is_dirty());
-            for (const auto &c : r) expect(!c.attribute.has(cell::attributes::clean));
         }
     };
 

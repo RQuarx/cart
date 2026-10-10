@@ -113,11 +113,10 @@ namespace cart::term
                 hidden        = 1 << 6,
                 strikethrough = 1 << 7,
 
-                clean     = 1 << 8,
+                unwritten = 1 << 8,
                 selected  = 1 << 9,
                 confined  = 1 << 10,
                 url       = 1 << 11,
-                unwritten = 1 << 12,
             };
 
             std::uint8_t width = 0;

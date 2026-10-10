@@ -149,6 +149,10 @@ namespace cart::trait
                 m_data &= ~value;
         }
 
+
+        /** @brief Checks if the internal data is empty (0). */
+        [[nodiscard]] constexpr auto empty() const noexcept -> bool { return m_data == 0; }
+
     private:
         underlying_type m_data = 0;
     };

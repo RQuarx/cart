@@ -113,13 +113,17 @@ namespace cart::term
                 hidden        = 1 << 6,
                 strikethrough = 1 << 7,
 
-                clean    = 1 << 8,
-                selected = 1 << 9,
-                confined = 1 << 10,
-                url      = 1 << 11,
+                clean     = 1 << 8,
+                selected  = 1 << 9,
+                confined  = 1 << 10,
+                url       = 1 << 11,
+                unwritten = 1 << 12,
             };
 
             std::uint8_t width = 0;
+
+
+            constexpr attributes() noexcept { set(unwritten, true); }
         };
 
 
@@ -139,7 +143,7 @@ namespace cart::term
         };
 
 
-        character  content = character::codepoint(U' ');
+        character  content = character::codepoint(0);
         attributes attribute;
         colors     colors;
     };

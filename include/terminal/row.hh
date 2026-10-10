@@ -120,7 +120,7 @@ namespace cart::term
 
         [[nodiscard]] auto is_wrapped() const noexcept -> bool;
         [[nodiscard]] auto is_dirty() const noexcept -> bool;
-        [[nodiscard]] auto is_prompt_row() const noexcept -> bool;
+        [[nodiscard]] auto prompt_row() const noexcept -> std::optional<row::range>;
 
         void set_wrapped(bool state = true) noexcept;
 
@@ -141,18 +141,30 @@ namespace cart::term
             buffer.clear();
             buffer.reserve(columns());
 
+            std::size_t pending = 0;
+
             for (const auto &c : *this) switch (c.content.kind())
                 {
+                case cell::character::kind::spacer: continue;
+
                 case cell::character::kind::codepoint:
+                    if (c.content.empty())
+                    {
+                        pending++;
+                        continue;
+                    }
+
+                    buffer.append(pending, ' ');
+                    pending = 0;
                     utf8::append(c.content.as_codepoint(), std::back_inserter(buffer));
                     break;
 
                 case cell::character::kind::composed:
+                    buffer.append(pending, ' ');
+                    pending = 0;
                     buffer += resolver(c.content.as_composed_index());
                     break;
-
-                case cell::character::kind::spacer: break;
-                };
+                }
         }
 
 

@@ -1,63 +1,4 @@
-#include <cstdint>
-#include <optional>
-#include <ostream>
-#include <string>
-#include <string_view>
-#include <utility>
-#include <vector>
-
-
-template <typename T1, typename T2>
-auto operator<<(std::ostream &os, const std::pair<T1, T2> &p) -> std::ostream &
-{ return os << "(" << p.first << ", " << p.second << ")"; }
-
-
-#include <boost/ut.hpp>
-
-#include "terminal/row.hh"
-
-using namespace boost::ut;
-using cart::term::cell;
-using cart::term::color;
-using cart::term::row;
-using cart::term::underline_style;
-using character = cell::character;
-
-namespace
-{
-    using bounds_t = std::vector<std::pair<std::uint32_t, std::uint32_t>>;
-
-    auto uri(std::uint32_t b, std::uint32_t e, std::string u = "http://a", std::size_t id = 1)
-        -> row::extras::uri_range
-    {
-        row::extras::uri_range r {};
-        r.begin = b;
-        r.end   = e;
-        r.uri   = std::move(u);
-        r.id    = id;
-        return r;
-    }
-
-    auto underline(std::uint32_t b, std::uint32_t e, int style = 1) -> row::extras::underline_range
-    {
-        row::extras::underline_range r {
-            { b, e },
-            color::make_default_fg(), static_cast<underline_style>(style)
-        };
-        return r;
-    }
-
-    template <typename Opt>
-    auto bounds(const Opt &opt) -> bounds_t
-    {
-        bounds_t out;
-        if (!opt) return out;
-        for (const auto &r : *opt) out.emplace_back(r.begin, r.end);
-        return out;
-    }
-
-
-}
+#include <utils.cc> /* NOLINT */
 
 
 suite<"row::range"> range_suite = []
@@ -633,7 +574,7 @@ suite<"row flags"> flags_suite = []
     {
         row r { 5 };
         expect(!r.is_wrapped());
-        expect(!r.is_prompt_row());
+        expect(!r.prompt_row());
     };
 
     "wrapped round trip"_test = []
@@ -658,9 +599,9 @@ suite<"row flags"> flags_suite = []
     {
         row r { 5 };
         r.set_prompt_row(row::range { 0, 2 });
-        expect(r.is_prompt_row());
+        expect(r.prompt_row());
         r.set_prompt_row();
-        expect(!r.is_prompt_row());
+        expect(!r.prompt_row());
     };
 
     "set_dirty propagates to every cell"_test = []
@@ -681,7 +622,7 @@ suite<"row flags"> flags_suite = []
         const auto dirty = r.is_dirty();
         r.set_wrapped();
         expect(r.is_dirty() == dirty) << "wrapped must not change dirty";
-        expect(!r.is_prompt_row()) << "wrapped must not make this a prompt row";
+        expect(!r.prompt_row()) << "wrapped must not make this a prompt row";
     };
 
     "setting prompt row does not touch wrapped / dirty"_test = []
@@ -698,7 +639,7 @@ suite<"row flags"> flags_suite = []
         row r { 5 };
         r.set_dirty(false);
         expect(!r.is_wrapped()) << "clean must not make this wrapped";
-        expect(!r.is_prompt_row()) << "clean must not make this a prompt row";
+        expect(!r.prompt_row()) << "clean must not make this a prompt row";
     };
 };
 
@@ -753,10 +694,24 @@ suite<"row to_string"> to_string_suite = []
         expect(that % calls == 0);
     };
 
-    "default cells render as spaces"_test = []
+    "default (empty) cells render no visible characters"_test = []
     {
-        row r { 4 };
-        expect(r.to_string([](std::uint32_t) -> std::string_view { return ""; }) == "    ");
+        row  r { 4 };
+        auto s = r.to_string([](std::uint32_t) -> std::string_view { return ""; });
+        expect(s.find_first_not_of(std::string_view { " \0", 2 }) == std::string::npos);
+    };
+
+
+    "empty cells between content do not emit a NUL byte"_test = []
+    {
+        row r { 3 };
+        (*r[0])->content = character::codepoint(U'a');
+        /* r[1] stays empty */
+        (*r[2])->content = character::codepoint(U'b');
+
+        auto s = r.to_string([](std::uint32_t) -> std::string_view { return ""; });
+        expect(!s.contains('\0'));
+        expect(s.front() == 'a' and s.back() == 'b');
     };
 
     "ASCII codepoints are emitted as-is"_test = []
@@ -854,11 +809,14 @@ suite<"cell::character"> character_suite = []
         expect(c.as_codepoint() == U'\0');
     };
 
-    "default cell holds a space"_test = []
+    "default cell is empty and unwritten"_test = []
     {
         cell c;
-        expect(c.content == character::codepoint(U' '));
-        expect(!c.content.empty());
+        expect(c.content.empty());
+        expect(c.content == character {});
+        expect(c.content == character::codepoint(0));
+        expect(c.content.as_codepoint() == U'\0');
+        expect(c.attribute.has(cell::attributes::unwritten));
         expect(that % c.attribute.width == 0);
     };
 
@@ -927,22 +885,72 @@ suite<"cell::character"> character_suite = []
         }
     };
 
-    "only U+0000 is empty"_test = []
+    "default is empty, constructed characters are not"_test = []
     {
-        expect(character::codepoint(U'\0').empty());
+        expect(character {}.empty());
         expect(!character::codepoint(U' ').empty());
+        expect(!character::codepoint(U'a').empty());
         expect(!character::composed(0).empty());
         expect(!character::spacer(0).empty());
     };
 
     "equality distinguishes kinds and values"_test = []
     {
-        expect(character {} == character::codepoint(U'\0'));
+        expect(character {} == character {});
+        expect(character {} != character::codepoint(U' '));
         expect(character::codepoint(U'a') == character::codepoint(U'a'));
         expect(character::codepoint(U'a') != character::codepoint(U'b'));
         expect(character::composed(1) != character::composed(2));
         expect(character::composed(0) != character::codepoint(U'\0'));
         expect(character::spacer(0) != character::composed(0));
+    };
+};
+
+
+suite<"cell::attributes"> cell_attributes_suite = []
+{
+    "no flag other than unwritten is set by default"_test = []
+    {
+        cell c;
+        for (auto f :
+             { cell::attributes::bold, cell::attributes::dim, cell::attributes::italic,
+               cell::attributes::underline, cell::attributes::blinking, cell::attributes::inverse,
+               cell::attributes::hidden, cell::attributes::strikethrough, cell::attributes::clean,
+               cell::attributes::selected, cell::attributes::confined, cell::attributes::url })
+            expect(!c.attribute.has(f));
+    };
+
+    "unwritten can be cleared and set again"_test = []
+    {
+        cell c;
+        c.attribute.set(cell::attributes::unwritten, false);
+        expect(!c.attribute.has(cell::attributes::unwritten));
+        c.attribute.set(cell::attributes::unwritten, true);
+        expect(c.attribute.has(cell::attributes::unwritten));
+    };
+
+    "unwritten is independent of the other flags"_test = []
+    {
+        cell c;
+        c.attribute.set(cell::attributes::bold, true);
+        expect(c.attribute.has(cell::attributes::bold));
+        expect(c.attribute.has(cell::attributes::unwritten));
+
+        c.attribute.set(cell::attributes::unwritten, false);
+        expect(c.attribute.has(cell::attributes::bold));
+
+        c.attribute.set(cell::attributes::bold, false);
+        expect(!c.attribute.has(cell::attributes::unwritten));
+    };
+
+    "attribute copies keep unwritten"_test = []
+    {
+        cell a;
+        cell b = a;
+        expect(b.attribute.has(cell::attributes::unwritten));
+
+        a.attribute.set(cell::attributes::unwritten, false);
+        expect(b.attribute.has(cell::attributes::unwritten));
     };
 };
 

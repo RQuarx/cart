@@ -220,7 +220,11 @@ auto row::columns() const noexcept -> std::size_t { return m_columns.size(); }
 
 auto row::is_wrapped() const noexcept -> bool { return m_attribute.has(attributes::wrapped); }
 auto row::is_dirty() const noexcept -> bool { return !m_attribute.has(attributes::clean); }
-auto row::is_prompt_row() const noexcept -> bool { return m_attribute.has(attributes::prompt_row); }
+auto row::prompt_row() const noexcept -> std::optional<row::range>
+{
+    if (m_attribute.has(attributes::prompt_row)) return m_attribute.prompt_range;
+    return std::nullopt;
+}
 
 void row::set_wrapped(bool state) noexcept { m_attribute.set(attributes::wrapped, state); }
 void row::set_dirty(bool state) noexcept

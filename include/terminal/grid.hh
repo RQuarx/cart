@@ -8,6 +8,9 @@
 
 namespace cart::term
 {
+    namespace _impl { struct logical_line; }
+
+
     class grid
     {
     public:
@@ -45,5 +48,22 @@ namespace cart::term
 
 
         void mf_ensure_rows_is_under_limit();
+
+        static void
+        rewrap(_impl::logical_line &line, std::size_t new_columns, std::deque<term::row> &out_rows);
+
+
+        /* Copies every range that overlaps [pos, end) and rebases it to the chunk. */
+        static void clip(const auto &src, std::uint32_t pos, std::uint32_t end, auto &&add)
+        {
+            for (const auto &r : src)
+            {
+                if (r.end <= pos or r.begin >= end) continue;
+                auto c  = r;
+                c.begin = std::max(r.begin, pos) - pos;
+                c.end   = std::min(r.end, end) - pos;
+                add(std::move(c));
+            }
+        }
     };
 }

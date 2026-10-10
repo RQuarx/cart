@@ -89,7 +89,7 @@ namespace cart::term
         };
 
 
-        struct attributes final : public trait::attribute<std::uint8_t>
+        struct attributes final : public trait::bitpack<std::uint8_t>
         {
             enum flag : std::uint8_t
             {

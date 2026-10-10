@@ -1,3 +1,5 @@
+#include <spdlog/spdlog.h>
+
 #include "terminal/grid.hh"
 
 using cart::term::grid;
@@ -74,6 +76,8 @@ void grid::resize(std::size_t new_columns)
 {
     if (new_columns == columns()) return;
     std::deque<term::row> new_rows;
+
+    spdlog::trace("Terminal grid resized from {} columns to {} columns.", columns(), new_columns);
 
     for (const auto &row : m_rows) { /* TODO: implement reflow and whatnot */ }
 

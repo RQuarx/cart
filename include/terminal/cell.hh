@@ -99,10 +99,10 @@ namespace cart::term
         };
 
 
-        class attributes final : public trait::attribute<std::uint16_t>
+        class attributes final : public trait::bitpack<std::uint16_t>
         {
         public:
-            enum flag : std::uint16_t
+            enum flag : underlying_type
             {
                 bold          = 1 << 0,
                 dim           = 1 << 1,
